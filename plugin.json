@@ -1,0 +1,10 @@
+{
+  "name": "bean-core",
+  "version": "1.0.0",
+  "description": "Shared SDLC Orchestration Core: Expo Head Barista, OKF v0.2 Engine, Order Triage, Git Guardrails, Rehydration, and Backflush Retrospectives.",
+  "author": {
+    "name": "sapientcoffee"
+  },
+  "repository": "https://github.com/sapientcoffee/bean-core",
+  "license": "Apache-2.0"
+}

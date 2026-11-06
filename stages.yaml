@@ -1,0 +1,151 @@
+# Copyright 2026 Google LLC
+# Apache-2.0
+# Canonical Stage Registry for the Antigravity Specialty Coffee Swarm (bean-core)
+
+okf_version: "0.2"
+bundles:
+  ephemeral_root: ".scratch"
+  durable_plans_root: "plans"
+  durable_docs_root: "docs"
+
+cup_sizes:
+  ristretto:
+    description: "Tiny change (<= 2 files, <= 1 context window, clear requirements). Direct TDD in current conversation."
+    stages: ["0_triage", "7_tdd", "8_verify"]
+    gate: "direct_commit"
+  cortado:
+    description: "Small-to-medium feature (single-session planning, <= 4 slices). Uses RequestFeedback Artifact Gate."
+    stages: ["0_triage", "1_questions", "2_blind_research", "3_grill_and_prd", "4_spec", "5_plan", "6a_council", "6b_promote", "7_tdd", "8_verify", "9_retro"]
+    gate: "artifact_gate"
+  carafe:
+    description: "Multi-session epic or high-blast-radius change. Uses Spec PR Promotion Gate + GitHub Issues state machine."
+    stages: ["0_triage", "1_questions", "2_blind_research", "3_grill_and_prd", "4_spec", "5_plan", "6a_council", "6b_promote", "7_tdd", "8_verify", "9_retro"]
+    gate: "spec_pr"
+
+origins:
+  greenfield:
+    entry_stage: "0_ideation"
+    plugin: "bean-roaster"
+  brownfield:
+    entry_stage: "1_questions"
+    plugin: "bean-roaster"
+  legacy:
+    entry_stage: "1_assess"
+    plugin: "bean-grinder"
+
+stages:
+  0_triage:
+    coffee_name: "Order Triage"
+    plugin: "bean-core"
+    skill: "triage"
+    artifact: "index.md"
+    bundle: "ephemeral"
+    okf_type: "bundle"
+    next: ["0_ideation", "1_questions", "1_assess", "7_tdd"]
+
+  0_ideation:
+    coffee_name: "Green Bean Selection"
+    plugin: "bean-roaster"
+    skill: "ideator"
+    artifact: "00_IDEATION.md"
+    bundle: "ephemeral"
+    okf_type: "ideation"
+    next: ["3_grill_and_prd"]
+
+  1_questions:
+    coffee_name: "Cupping Form"
+    plugin: "bean-roaster"
+    skill: "cupping-form"
+    artifact: "01_QUESTIONS.md"
+    bundle: "ephemeral"
+    okf_type: "questions"
+    next: ["2_blind_research"]
+
+  2_blind_research:
+    coffee_name: "Blind Cupping"
+    plugin: "bean-brewer"
+    skill: "research"
+    subagents: ["research", "context-mapping", "codebase-analysis", "pattern-recognition"]
+    artifact: "02_EXTRACTION.md"
+    bundle: "ephemeral"
+    okf_type: "extraction"
+    next: ["3_grill_and_prd"]
+
+  3_grill_and_prd:
+    coffee_name: "Dial-In"
+    plugin: "bean-roaster"
+    skill: "grill"
+    followup_skill: "write-prd"
+    subagents: ["copy-editor", "threat-modeler"]
+    artifact: "03_PRD.md"
+    durable_outputs: ["docs/CONTEXT.md", "docs/adr/"]
+    bundle: "ephemeral"
+    okf_type: "prd"
+    next: ["4_spec"]
+
+  4_spec:
+    coffee_name: "Recipe Card (Spec)"
+    plugin: "bean-brewer"
+    skill: "to-spec"
+    subagents: ["threat-modeler"]
+    artifact: "04_SPEC.md"
+    bundle: "ephemeral"
+    okf_type: "specification"
+    next: ["5_plan"]
+
+  5_plan:
+    coffee_name: "Recipe Card (Vertical Slices)"
+    plugin: "bean-brewer"
+    skill: "to-tickets"
+    artifact: "05_PLAN.md"
+    bundle: "ephemeral"
+    okf_type: "plan"
+    next: ["6a_council"]
+
+  6a_council:
+    coffee_name: "Q-Grader Panel"
+    plugin: "bean-brewer"
+    skill: "plan-council"
+    subagents: ["code-inspection", "contract-auditor", "threat-modeler", "reviewer-product", "review-arbiter"]
+    artifact: "06_COUNCIL.md"
+    bundle: "ephemeral"
+    okf_type: "council_review"
+    next: ["6b_promote"]
+
+  6b_promote:
+    coffee_name: "Calling the Order"
+    plugin: "bean-brewer"
+    skill: "promote"
+    script: "scripts/promote.py"
+    artifact: "tickets/index.md"
+    bundle: "ephemeral"
+    okf_type: "tickets_index"
+    next: ["7_tdd"]
+
+  7_tdd:
+    coffee_name: "Group Heads"
+    plugin: "bean-brewer"
+    subagents: ["code-implementation"]
+    workspace_mode: "share"
+    max_parallel_workers: 3
+    next: ["8_verify"]
+
+  8_verify:
+    coffee_name: "Tasting at the Pass"
+    plugin: "bean-brewer"
+    subagents: ["execution-verifier", "contract-auditor"]
+    artifact: "07_VERIFICATION.md"
+    walkthrough_artifact: "06_WALKTHROUGH.md"
+    bundle: "durable_plans"
+    okf_type: "verification"
+    next: ["9_retro"]
+
+  9_retro:
+    coffee_name: "Backflush"
+    plugin: "bean-core"
+    skill: "retro"
+    script: "scripts/retro.py"
+    artifact: "08_RETRO.md"
+    bundle: "durable_plans"
+    okf_type: "retrospective"
+    next: []
