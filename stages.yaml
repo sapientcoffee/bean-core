@@ -47,6 +47,7 @@ stages:
     coffee_name: "Green Bean Selection"
     plugin: "bean-roaster"
     skill: "ideator"
+    subagents: ["product-ideator"]
     artifact: "00_IDEATION.md"
     bundle: "ephemeral"
     okf_type: "ideation"
@@ -56,6 +57,7 @@ stages:
     coffee_name: "Cupping Form"
     plugin: "bean-roaster"
     skill: "cupping-form"
+    subagents: ["question-formulator"]
     artifact: "01_QUESTIONS.md"
     bundle: "ephemeral"
     okf_type: "questions"
@@ -65,7 +67,7 @@ stages:
     coffee_name: "Blind Cupping"
     plugin: "bean-brewer"
     skill: "research"
-    subagents: ["research", "context-mapping", "codebase-analysis", "pattern-recognition"]
+    subagents: ["research", "context-mapping", "codebase-analysis", "pattern-recognition", "extraction-synthesizer"]
     artifact: "02_EXTRACTION.md"
     bundle: "ephemeral"
     okf_type: "extraction"
@@ -76,7 +78,7 @@ stages:
     plugin: "bean-roaster"
     skill: "grill"
     followup_skill: "write-prd"
-    subagents: ["copy-editor", "threat-modeler"]
+    subagents: ["prd-author", "copy-editor", "threat-modeler"]
     artifact: "03_PRD.md"
     durable_outputs: ["docs/CONTEXT.md", "docs/adr/"]
     bundle: "ephemeral"
@@ -87,7 +89,7 @@ stages:
     coffee_name: "Recipe Card (Spec)"
     plugin: "bean-brewer"
     skill: "to-spec"
-    subagents: ["threat-modeler"]
+    subagents: ["system-design", "threat-modeler"]
     artifact: "04_SPEC.md"
     bundle: "ephemeral"
     okf_type: "specification"
@@ -97,6 +99,7 @@ stages:
     coffee_name: "Recipe Card (Vertical Slices)"
     plugin: "bean-brewer"
     skill: "to-tickets"
+    subagents: ["system-design"]
     artifact: "05_PLAN.md"
     bundle: "ephemeral"
     okf_type: "plan"
@@ -107,6 +110,11 @@ stages:
     plugin: "bean-brewer"
     skill: "plan-council"
     subagents: ["code-inspection", "contract-auditor", "threat-modeler", "reviewer-product", "review-arbiter"]
+    enterprise_teamwork: true
+    teamwork_trigger: "carafe"
+    execution_modes:
+      cortado: "invoke_subagent (Light/Standard Council via @expo)"
+      carafe: "invoke_subagent OR /teamwork live peer negotiation (@system-design, @contract-auditor, @code-inspection, @threat-modeler, @reviewer-product, @review-arbiter)"
     artifact: "06_COUNCIL.md"
     bundle: "ephemeral"
     okf_type: "council_review"
@@ -128,12 +136,16 @@ stages:
     subagents: ["code-implementation"]
     workspace_mode: "share"
     max_parallel_workers: 3
+    enterprise_teamwork: true
+    execution_modes:
+      cortado: "invoke_subagent (parallel Group Heads on epic/<id>-<slug>)"
+      carafe: "invoke_subagent OR /teamwork multi-worker wave (3x @code-implementation + @contract-auditor + @execution-verifier)"
     next: ["8_verify"]
 
   8_verify:
     coffee_name: "Tasting at the Pass"
     plugin: "bean-brewer"
-    subagents: ["execution-verifier", "contract-auditor"]
+    subagents: ["execution-verifier", "contract-auditor", "walkthrough-recorder"]
     artifact: "07_VERIFICATION.md"
     walkthrough_artifact: "06_WALKTHROUGH.md"
     bundle: "durable_plans"

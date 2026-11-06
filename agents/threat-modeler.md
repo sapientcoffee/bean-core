@@ -2,11 +2,12 @@
 name: threat-modeler
 description: ASVS Level 2 Threat Modeler. Audits specifications (04_SPEC.md), schemas, and plans (05_PLAN.md) against ASVS security domains, race conditions, auth boundaries, and blast radius.
 kind: local
+subagent: true
+mainAgent: false
+model: inherit
 tools:
   - read_file
-  - grep_search
-  - list_directory
-model: gemini-3.1-pro-preview
+  - run_command
 ---
 
 <!--
