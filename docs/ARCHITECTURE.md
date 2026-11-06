@@ -453,6 +453,6 @@ These issues were found while building the docs. The explorer lists them under *
 2. **The bundle `stage` never advances.** `refresh_index` keeps the existing `stage`. Only an explicit stamp of `index.md` changes it, and that triggers gap 1.
 3. **`1_assess` is undefined.** It is referenced by `origins.legacy` and `0_triage.next` but has no entry in `stages:`.
 4. **Hook path assumptions.** `hooks.json` calls plugin-relative `./scripts/...` but validates workspace-relative `.scratch`. PostToolUse is advisory only (`2>/dev/null || true`).
-5. **Dangling agent references.** `@review-arbiter` mentions `@architect` and `@auditor`, which no plugin defines.
+5. **Dangling agent references (fixed).** `@review-arbiter` previously mentioned `@architect` and `@auditor`; these now reference `@system-design` and `@code-inspection`.
 6. **Duplicated scripts.** `okf.py`, `git_guardrails.py` and `rehydrate.py` have byte-identical copies in bean-brewer, so they can drift apart. `rules/AGENTS.md` cites `scripts/plan_lint.py`, which lives in bean-brewer.
 7. **Hard-coded test path (fixed).** `tests/test_okf.py` used to point at a machine-specific scratch directory. It now uses the repository root.

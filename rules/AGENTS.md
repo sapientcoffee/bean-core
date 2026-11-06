@@ -3,9 +3,12 @@
 Welcome to **Bean-Core**, the shared orchestration, Open Knowledge Format (OKF v0.2), and safety governance layer for the Antigravity Specialty Coffee Swarm (`bean-roaster`, `bean-grinder`, `bean-brewer`, `bean-cup`, and `bean-descale`).
 
 ## 1. Smart Zone Discipline (< 100K Tokens)
-- **Head Barista (`@expo`) Delegation:** The orchestrator never writes application source code directly. Delegate discovery, specification, TDD implementation, and verification to isolated subagents (`invoke_subagent`) and deterministic CLI scripts (`scripts/okf.py`, `scripts/plan_lint.py`, `scripts/retro.py`).
+- **Head Barista (`@expo`) Delegation:** The orchestrator never writes application source code directly. Delegate discovery, heavy artifact authoring (`ideator` $\rightarrow$ `@product-ideator`, `cupping-form` $\rightarrow$ `@question-formulator`, `research` synthesis $\rightarrow$ `@extraction-synthesizer`, `write-prd` $\rightarrow$ `@prd-author`, `to-spec` & `to-tickets` $\rightarrow$ `@system-design`, `record` $\rightarrow$ `@walkthrough-recorder`), TDD implementation, and verification to isolated subagents (`invoke_subagent`) and deterministic CLI scripts (`scripts/okf.py`, `scripts/plan_lint.py`, `scripts/retro.py`).
 - **Capped Subagent Responses:** Subagents write their primary deliverables to OKF-stamped Markdown files and return concise summaries ($\le 300$ words) with file paths and `PASS` / `BLOCKED` status.
 - **Session Rehydration:** Persist workflow state in `.scratch/<id>/index.md` and `.scratch/<id>/log.md`. Starting a new conversation automatically rehydrates active bundle context via `scripts/rehydrate.py`.
+- **Antigravity Enterprise `/teamwork` Governance:**
+  - **Recommended:** Stage 6A (`6a_council`) Carafe Full Council (`@system-design`, `@contract-auditor`, `@code-inspection`, `@threat-modeler`, `@reviewer-product`, `@review-arbiter`), Legacy `adversarial-review` stakeholder negotiation, Stage 7/8 (`7_tdd` / `8_verify`) Carafe parallel Group Head waves, and `bean-descale` security triad (`@vulnerability-scanner`, `@killchain-analyzer`, `@security-remediator`).
+  - **Strictly Forbidden:** Stage 2 Blind Cupping (`2_blind_research`), where strict information barriers require isolated `invoke_subagent` calls reading only `.scratch/<id>/01_QUESTIONS.md`.
 
 ## 2. Order Triage (`0_triage`)
 Every engineering request is classified across two axes before execution:
