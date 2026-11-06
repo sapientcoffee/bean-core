@@ -1,6 +1,6 @@
 # ☕ Bean-Core Architecture
 
-> The plain-Markdown companion to the **[interactive architecture explorer](index.html)**.
+> The plain-Markdown companion to the **[interactive architecture explorer](https://sapientcoffee.github.io/bean-core/)**. You can also open [`index.html`](index.html) locally.
 > The explorer lets you drill from the swarm overview down to individual functions and step through each runtime flow.
 > This document covers the same material in a form that renders on GitHub.
 
@@ -354,7 +354,7 @@ Invariants checked by `okf.py validate`:
 | Clean | `clean -f`, `-fd`, `-fx`, `--force` | Anything with `-n` or `--dry-run` |
 | Protected branch delete | `branch -D main\|master`, `branch --delete --force main\|master` | Deleting any other branch |
 
-Global options between `git` and the subcommand (for example `git -C repo push -f`) are also caught. You can try commands in the **Playground** view of the [interactive explorer](index.html#playground). It runs a JavaScript port of `evaluate_command`.
+Global options between `git` and the subcommand (for example `git -C repo push -f`) are also caught. You can try commands in the **Playground** view of the [interactive explorer](https://sapientcoffee.github.io/bean-core/#playground). It runs a JavaScript port of `evaluate_command`.
 
 ---
 

@@ -2,7 +2,9 @@
 
 > **Canonical Stage Registry, Master Expo Orchestrator, Cross-Cutting Governance & Provenance Engine** for the Antigravity Specialty Coffee Swarm.
 
-**📖 Docs:** [Interactive architecture explorer](docs/index.html) · [Architecture deep-dive (Markdown)](docs/ARCHITECTURE.md)
+[![Docs](https://github.com/sapientcoffee/bean-core/actions/workflows/pages.yml/badge.svg)](https://github.com/sapientcoffee/bean-core/actions/workflows/pages.yml)
+
+**📖 Docs:** [**Interactive architecture explorer**](https://sapientcoffee.github.io/bean-core/) · [Architecture deep-dive (Markdown)](docs/ARCHITECTURE.md)
 
 ---
 
@@ -18,14 +20,23 @@
 | **Flows** | Step through sequence diagrams for the order lifecycle, SessionStart, PreToolUse, PostToolUse, `okf stamp`, council and retro (use ← / →). |
 | **Playground** | Test commands against the git guardrails, try the council consensus calculator, and build `okf.py stamp` commands. |
 
-Every view has its own URL (for example `docs/index.html#flows/pre-tool-use`), so you can link to it directly.
+Every view has its own URL, so you can link to it directly. For example, [`#flows/pre-tool-use`](https://sapientcoffee.github.io/bean-core/#flows/pre-tool-use) opens the guardrail flow.
+
+**Live site:** <https://sapientcoffee.github.io/bean-core/>. The [`pages.yml`](.github/workflows/pages.yml) workflow publishes it on every push to `main` that touches `docs/`, `stages.yaml`, `scripts/` or `tests/`. The test suite, including the docs drift check, must pass before anything is deployed. Pull requests run the checks without deploying.
 
 ```bash
-# Open locally
+# Open locally (no server needed)
 xdg-open docs/index.html        # macOS: open docs/index.html
 ```
 
-To publish it, enable **GitHub Pages → Deploy from branch → `/docs`**.
+<details>
+<summary>Enabling Pages on a fork</summary>
+
+1. Go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
+   You can do the same from the CLI with `gh api -X POST repos/<owner>/bean-core/pages -f build_type=workflow`.
+2. Push to `main`, or run the **Docs (GitHub Pages)** workflow by hand from the Actions tab.
+
+</details>
 
 ---
 
@@ -106,7 +117,7 @@ Every request is classified on two axes by the `triage` skill.
 | 8 | `8_verify` | Tasting at the Pass | bean-brewer | `07_VERIFICATION.md`, `06_WALKTHROUGH.md` |
 | 9 | `9_retro` | Backflush | bean-core | `08_RETRO.md` |
 
-See it computed live in the [Pipeline view](docs/index.html#pipeline).
+See it computed live in the [Pipeline view](https://sapientcoffee.github.io/bean-core/#pipeline).
 
 ---
 
