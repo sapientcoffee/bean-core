@@ -1,0 +1,1099 @@
+<!doctype html>
+<!--
+Copyright 2026 Google LLC
+Licensed under the Apache License, Version 2.0
+
+bean-core interactive architecture explorer.
+Self-contained (no build step, no network). Open directly in a browser or serve /docs via GitHub Pages.
+Data in this file is cross-checked against stages.yaml and scripts/*.py by tests/test_docs.py.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bean-core · Interactive Architecture</title>
+<meta name="description" content="Interactive, drill-down architecture explorer for bean-core: the stage registry, Expo orchestrator, OKF v0.2 provenance engine, lifecycle hooks and retrospective telemetry of the Specialty Coffee Swarm.">
+<style>
+  :root {
+    color-scheme: dark light;
+    --bg: #17110d;
+    --panel: #221913;
+    --panel-2: #2c2119;
+    --line: #4a3628;
+    --text: #f3e9df;
+    --muted: #b9a593;
+    --crema: #e0a96d;
+    --crema-2: #c98544;
+    --milk: #f6e7d0;
+    --ok: #7fc89a;
+    --warn: #e6c35c;
+    --bad: #ef7d6e;
+    --info: #8fb8e8;
+    --radius: 12px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #faf5ef; --panel: #ffffff; --panel-2: #f3eadf; --line: #dccbb8;
+      --text: #2b1d14; --muted: #6f5a48; --crema: #9a5b1f; --crema-2: #7a4513;
+      --milk: #3b2618; --ok: #23784a; --warn: #8a6a00; --bad: #b23a2b; --info: #2a5f9e;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+  a { color: var(--crema); }
+  code, pre { font-family: var(--mono); font-size: 0.88em; }
+  kbd { font-family: var(--sans); font-size: 0.85em; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--panel-2); }
+  code { background: var(--panel-2); padding: 0.1em 0.35em; border-radius: 5px; }
+  pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
+  pre code { background: none; padding: 0; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--crema); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* Header + nav */
+  header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  .top-inner { max-width: 1280px; margin: 0 auto; padding: 12px 20px 0; }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { margin: 0; font-size: 1.35rem; }
+  .brand p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  nav.views { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; }
+  nav.views a { text-decoration: none; color: var(--muted); padding: 8px 14px; border-radius: 10px 10px 0 0; border: 1px solid transparent; border-bottom: none; white-space: nowrap; }
+  nav.views a:hover { color: var(--text); }
+  nav.views a[aria-current="page"] { color: var(--text); background: var(--panel); border-color: var(--line); }
+  .crumbs { max-width: 1280px; margin: 0 auto; padding: 10px 20px; font-size: 0.85rem; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .crumbs a { text-decoration: none; }
+  .crumbs .sep { opacity: 0.5; }
+  .level-badge { margin-left: auto; font-family: var(--mono); font-size: 0.75rem; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 4px 20px 60px; }
+  section.view[hidden] { display: none; }
+  h2 { font-size: 1.25rem; margin: 18px 0 8px; }
+  h3 { font-size: 1.05rem; margin: 16px 0 6px; }
+  .lede { color: var(--muted); max-width: 80ch; margin-top: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .grid { display: grid; gap: 12px; }
+  .chip { display: inline-block; font-family: var(--mono); font-size: 0.75rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); margin: 2px 4px 2px 0; white-space: nowrap; }
+  .chip.link { cursor: pointer; text-decoration: none; color: var(--text); }
+  .chip.link:hover { border-color: var(--crema); }
+  .muted { color: var(--muted); }
+  .pill-ok { color: var(--ok); } .pill-warn { color: var(--warn); } .pill-bad { color: var(--bad); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  details { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin: 8px 0; background: var(--panel); }
+  details > summary { cursor: pointer; font-weight: 600; }
+  details[open] > summary { margin-bottom: 6px; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
+  .btn:hover { border-color: var(--crema); }
+  .btn.primary { background: var(--crema); color: #1b120c; border-color: var(--crema); font-weight: 600; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { background: var(--panel); border: none; padding: 6px 12px; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: none; }
+  .seg button[aria-pressed="true"] { background: var(--crema); color: #1b120c; font-weight: 600; }
+
+  /* Overview */
+  .zoom { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .zoom .card h3 { margin-top: 0; }
+  .zoom .n { font-family: var(--mono); color: var(--crema); font-size: 0.8rem; }
+  .swarm { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "roaster grinder brewer" "cup core descale"; gap: 12px; }
+  @media (max-width: 820px) { .swarm { grid-template-columns: 1fr; grid-template-areas: "core" "roaster" "grinder" "brewer" "descale" "cup"; } }
+  .plugin { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; transition: transform .15s, border-color .15s; }
+  .plugin:hover { transform: translateY(-2px); border-color: var(--crema); }
+  .plugin h3 { margin: 0 0 2px; }
+  .plugin .role { color: var(--crema); font-size: 0.85rem; margin-bottom: 6px; }
+  .plugin.core { border: 2px solid var(--crema); background: linear-gradient(160deg, var(--panel-2), var(--panel)); }
+  .plugin .cta { display: block; margin-top: 8px; font-size: 0.8rem; color: var(--muted); }
+  .layers { display: grid; gap: 8px; }
+  .layer { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: center; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .layer:hover { border-color: var(--crema); }
+  .layer b { color: var(--crema); }
+  @media (max-width: 640px) { .layer { grid-template-columns: 1fr; } }
+
+  /* Pipeline */
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 8px 0 14px; }
+  .controls .ctl-label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 4px; }
+  .track { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; counter-reset: step; }
+  .stage { position: relative; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px 12px; opacity: 0.35; transition: opacity .2s, border-color .2s, box-shadow .2s; }
+  .stage.on { opacity: 1; }
+  .stage.on::before { counter-increment: step; content: counter(step); position: absolute; top: -9px; right: 10px; background: var(--crema); color: #1b120c; font: 700 0.72rem var(--mono); border-radius: 999px; padding: 1px 7px; }
+  .stage.entry { border-color: var(--info); }
+  .stage.playing { box-shadow: 0 0 0 3px var(--crema); }
+  .stage.selected { border-color: var(--crema); border-width: 2px; }
+  .stage .key { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+  .stage .name { font-weight: 700; margin: 2px 0; }
+  .stage .plug { font-size: 0.78rem; }
+  .stage.external { border-style: dashed; }
+  .gatebar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 16px; align-items: start; }
+  @media (max-width: 980px) { .two-col { grid-template-columns: 1fr; } }
+  aside.detail { position: sticky; top: 130px; }
+  dl.kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 10px; margin: 8px 0; font-size: 0.9rem; }
+  dl.kv dt { color: var(--muted); }
+  dl.kv dd { margin: 0; }
+
+  /* Internals */
+  .internals { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .internals { grid-template-columns: 1fr; } }
+  .tree { position: sticky; top: 130px; max-height: calc(100vh - 150px); overflow: auto; }
+  .tree h4 { margin: 12px 0 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .tree a { display: block; text-decoration: none; color: var(--text); padding: 5px 10px; border-radius: 8px; font-size: 0.92rem; }
+  .tree a:hover { background: var(--panel-2); }
+  .tree a[aria-current="true"] { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--crema); }
+  .tree input { width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+  .comp-head { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+  .comp-head h2 { margin: 0; }
+  .fn-sig { font-family: var(--mono); font-size: 0.85rem; }
+  .group-cards { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .group-cards a { text-decoration: none; color: inherit; }
+  .group-cards .card:hover { border-color: var(--crema); }
+
+  /* Flows (sequence diagrams) */
+  .flows { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .flows { grid-template-columns: 1fr; } }
+  .seq { overflow-x: auto; }
+  .seq-inner { min-width: 640px; }
+  .lanes, .seq-row { display: grid; }
+  .lane-head { text-align: center; font-size: 0.8rem; font-weight: 700; padding: 8px 4px; margin: 0 4px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; }
+  .seq-row { position: relative; min-height: 54px; cursor: pointer; }
+  .seq-row .cell { position: relative; }
+  .seq-row .cell::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed var(--line); }
+  .msg { position: absolute; top: 6px; }
+  .msg .label { font-size: 0.78rem; text-align: center; padding: 0 6px; line-height: 1.25; }
+  .msg .arrow { height: 2px; background: var(--muted); margin-top: 4px; position: relative; }
+  .msg .arrow::after { content: ""; position: absolute; top: -5px; border: 6px solid transparent; }
+  .msg.right .arrow::after { right: -2px; border-left-color: var(--muted); }
+  .msg.left .arrow::after { left: -2px; border-right-color: var(--muted); }
+  .msg.self { transform: translateX(-50%); }
+  .msg.self .label { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; max-width: 220px; }
+  .seq-row.done .arrow { background: var(--crema-2); }
+  .seq-row.done .msg.right .arrow::after { border-left-color: var(--crema-2); }
+  .seq-row.done .msg.left .arrow::after { border-right-color: var(--crema-2); }
+  .seq-row.current .arrow { background: var(--crema); height: 3px; }
+  .seq-row.current .msg.right .arrow::after { border-left-color: var(--crema); }
+  .seq-row.current .msg.left .arrow::after { border-right-color: var(--crema); }
+  .seq-row.current .label { color: var(--crema); font-weight: 700; }
+  .seq-row.current .msg.self .label { border-color: var(--crema); }
+  .seq-row.future { opacity: 0.45; }
+  .stepbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+  .explain { min-height: 96px; }
+  .explain .num { font-family: var(--mono); color: var(--crema); }
+
+  /* Playground */
+  .play { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+  .play input[type=text], .play input[type=number] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-family: var(--mono); }
+  .verdict { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); font-family: var(--mono); font-size: 0.85rem; white-space: pre-wrap; }
+  .verdict.allow { border-color: var(--ok); }
+  .verdict.deny { border-color: var(--bad); }
+  .nums { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .nums label { font-size: 0.75rem; color: var(--muted); }
+  footer { max-width: 1280px; margin: 0 auto; padding: 20px; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); }
+  .warnbox { border-left: 3px solid var(--warn); padding: 8px 12px; background: var(--panel-2); border-radius: 0 8px 8px 0; margin: 10px 0; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <h1>☕ bean-core</h1>
+      <p>Stage registry · Expo orchestrator · OKF v0.2 provenance · hooks &amp; guardrails · Backflush telemetry</p>
+    </div>
+    <nav class="views" aria-label="Documentation views">
+      <a href="#overview" data-view="overview">1 · Overview</a>
+      <a href="#pipeline" data-view="pipeline">2 · Pipeline</a>
+      <a href="#internals" data-view="internals">3 · Internals</a>
+      <a href="#flows" data-view="flows">4 · Flows</a>
+      <a href="#playground" data-view="playground">5 · Playground</a>
+    </nav>
+  </div>
+</header>
+<div class="crumbs" id="crumbs" aria-label="Breadcrumb"></div>
+
+<main>
+  <!-- ============ OVERVIEW ============ -->
+  <section class="view" id="view-overview" aria-labelledby="h-overview">
+    <h2 id="h-overview">How the Specialty Coffee Swarm fits together</h2>
+    <p class="lede"><strong>bean-core</strong> is the shared foundation of the swarm. It owns no feature code: it defines <em>which stages exist and in what order</em> (<code>stages.yaml</code>), <em>who orchestrates them</em> (<code>@expo</code>), <em>how every artifact proves where it came from</em> (OKF v0.2 stamping), and <em>what is never allowed</em> (git guardrails). The other plugins plug their skills into the stages it declares.</p>
+
+    <div class="grid zoom" role="list" aria-label="Zoom levels">
+      <div class="card" role="listitem"><span class="n">LEVEL 1 · OVERVIEW</span><h3>The swarm</h3><p class="muted">Plugins, their roles, and the stages each one owns. Click any plugin.</p></div>
+      <div class="card" role="listitem"><span class="n">LEVEL 2 · PIPELINE</span><h3>The stages</h3><p class="muted">Pick a cup size and origin to see the exact path an order takes, its gate, and every artifact.</p></div>
+      <div class="card" role="listitem"><span class="n">LEVEL 3 · INTERNALS</span><h3>The implementation</h3><p class="muted">Each agent, skill, hook and script, down to functions, CLI flags and source lines.</p></div>
+      <div class="card" role="listitem"><span class="n">FLOWS</span><h3>Runtime behaviour</h3><p class="muted">Step-through sequence diagrams: session rehydration, guardrails, stamping, council, retro.</p></div>
+    </div>
+
+    <h3>The swarm map</h3>
+    <div class="swarm" id="swarm"></div>
+
+    <h3>Inside bean-core: seven layers</h3>
+    <p class="muted">Click a layer to drill into its implementation.</p>
+    <div class="layers" id="layers"></div>
+  </section>
+
+  <!-- ============ PIPELINE ============ -->
+  <section class="view" id="view-pipeline" aria-labelledby="h-pipeline" hidden>
+    <h2 id="h-pipeline">The canonical pipeline (<code>stages.yaml</code>)</h2>
+    <p class="lede">Every order is triaged on two axes. <strong>Cup size</strong> sets how much ceremony and which approval gate applies; <strong>origin</strong> sets the entry stage. Numbered cards are the stages this order goes through, in order.</p>
+    <div class="controls">
+      <div><span class="ctl-label" id="lbl-cup">Cup size</span><div class="seg" role="group" aria-labelledby="lbl-cup" id="cup-seg"></div></div>
+      <div><span class="ctl-label" id="lbl-origin">Origin</span><div class="seg" role="group" aria-labelledby="lbl-origin" id="origin-seg"></div></div>
+      <div><span class="ctl-label" aria-hidden="true">&nbsp;</span><button class="btn primary" id="play-path">▶ Walk the path</button></div>
+    </div>
+    <div class="gatebar card" id="gatebar" aria-live="polite"></div>
+    <div class="two-col">
+      <div class="track" id="track"></div>
+      <aside class="detail card" id="stage-detail" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ============ INTERNALS ============ -->
+  <section class="view" id="view-internals" aria-labelledby="h-internals" hidden>
+    <h2 id="h-internals" class="sr-only">Internals</h2>
+    <div class="internals">
+      <nav class="tree card" id="tree" aria-label="Components"></nav>
+      <div id="comp"></div>
+    </div>
+  </section>
+
+  <!-- ============ FLOWS ============ -->
+  <section class="view" id="view-flows" aria-labelledby="h-flows" hidden>
+    <h2 id="h-flows" class="sr-only">Flows</h2>
+    <div class="flows">
+      <nav class="tree card" id="flow-list" aria-label="Flows"></nav>
+      <div>
+        <div class="comp-head"><h2 id="flow-title"></h2></div>
+        <p class="lede" id="flow-desc"></p>
+        <div class="stepbar">
+          <button class="btn" id="f-prev" aria-label="Previous step">◀ Prev</button>
+          <button class="btn primary" id="f-play">▶ Play</button>
+          <button class="btn" id="f-next" aria-label="Next step">Next ▶</button>
+          <button class="btn" id="f-reset">Reset</button>
+          <span class="muted" style="font-size:.8rem">Tip: <kbd>←</kbd>/<kbd>→</kbd> step · click any row to jump</span>
+        </div>
+        <div class="card seq"><div class="seq-inner" id="seq"></div></div>
+        <div class="card explain" id="explain" aria-live="polite" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLAYGROUND ============ -->
+  <section class="view" id="view-playground" aria-labelledby="h-play" hidden>
+    <h2 id="h-play">Playground</h2>
+    <p class="lede">Live, in-browser ports of bean-core logic so you can see exactly how decisions are made.</p>
+    <div class="grid play">
+      <div class="card">
+        <h3>Git guardrail tester</h3>
+        <p class="muted">A faithful JavaScript port of <a href="#internals/git-guardrails"><code>evaluate_command()</code></a>. Type any shell command; compound commands are split on <code>&amp;&amp; || ; | \n</code> and each segment is checked.</p>
+        <label for="g-cmd" class="sr-only">Command</label>
+        <input type="text" id="g-cmd" value="git status && git push --force origin main" spellcheck="false" autocomplete="off">
+        <div style="margin-top:8px" id="g-presets"></div>
+        <div class="verdict" id="g-out" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h3>Council consensus calculator</h3>
+        <p class="muted">How <a href="#internals/review-arbiter"><code>@review-arbiter</code></a> scores a review round.</p>
+        <div class="nums">
+          <div><label for="c-C">Critical</label><input type="number" id="c-C" min="0" value="0"></div>
+          <div><label for="c-H">High</label><input type="number" id="c-H" min="0" value="1"></div>
+          <div><label for="c-M">Medium</label><input type="number" id="c-M" min="0" value="2"></div>
+          <div><label for="c-L">Low</label><input type="number" id="c-L" min="0" value="3"></div>
+          <div><label for="c-R">Round</label><input type="number" id="c-R" min="1" max="3" value="1"></div>
+        </div>
+        <div class="verdict" id="c-out" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h3>Stamp command builder</h3>
+        <p class="muted">Generates the deterministic <a href="#internals/okf-py"><code>okf.py stamp</code></a> command for any stage, so timestamps and hashes are never hand-written.</p>
+        <label for="s-stage" class="muted" style="font-size:.8rem">Stage</label>
+        <select id="s-stage" class="btn" style="width:100%"></select>
+        <label for="s-id" class="muted" style="font-size:.8rem;display:block;margin-top:8px">Bundle id</label>
+        <input type="text" id="s-id" value="42-espresso-api" spellcheck="false">
+        <pre><code id="s-out"></code></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  bean-core · Apache-2.0 · Source: <a href="https://github.com/sapientcoffee/bean-core">sapientcoffee/bean-core</a> ·
+  Prefer plain Markdown? See <a href="ARCHITECTURE.md">ARCHITECTURE.md</a>. This page is kept honest by <code>tests/test_docs.py</code>.
+</footer>
+
+<script>
+"use strict";
+const REPO = "https://github.com/sapientcoffee/bean-core/blob/main/";
+const src = (file, a, b) => `${REPO}${file}${a ? `#L${a}${b ? `-L${b}` : ""}` : ""}`;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = (sel, root = document) => root.querySelector(sel);
+
+/* ------------------------------------------------------------------
+ * DATA: mirrored from stages.yaml (verified by tests/test_docs.py)
+ * ------------------------------------------------------------------ */
+const CUP_SIZES = {
+  ristretto: { label: "Ristretto", description: "Tiny change (<= 2 files, <= 1 context window, clear requirements). Direct TDD in current conversation.", stages: ["0_triage", "7_tdd", "8_verify"], gate: "direct_commit" },
+  cortado: { label: "Cortado", description: "Small-to-medium feature (single-session planning, <= 4 slices). Uses RequestFeedback Artifact Gate.", stages: ["0_triage", "1_questions", "2_blind_research", "3_grill_and_prd", "4_spec", "5_plan", "6a_council", "6b_promote", "7_tdd", "8_verify", "9_retro"], gate: "artifact_gate" },
+  carafe: { label: "Carafe", description: "Multi-session epic or high-blast-radius change. Uses Spec PR Promotion Gate + GitHub Issues state machine.", stages: ["0_triage", "1_questions", "2_blind_research", "3_grill_and_prd", "4_spec", "5_plan", "6a_council", "6b_promote", "7_tdd", "8_verify", "9_retro"], gate: "spec_pr" },
+};
+const GATES = {
+  direct_commit: "Direct commit — failing test → fix → one atomic Conventional Commit. No planning bundle.",
+  artifact_gate: "Artifact gate — plan artifacts are presented with a RequestFeedback “Proceed” button before implementation.",
+  spec_pr: "Spec PR gate — a GitHub Spec PR is reviewed (Four-Verdict table), then promote.py publishes Sub-Issues and the PR is squash-merged once.",
+};
+const ORIGINS = {
+  greenfield: { entry_stage: "0_ideation", plugin: "bean-roaster" },
+  brownfield: { entry_stage: "1_questions", plugin: "bean-roaster" },
+  legacy: { entry_stage: "1_assess", plugin: "bean-grinder" },
+};
+const STAGES = {
+  "0_triage": { coffee_name: "Order Triage", plugin: "bean-core", skill: "triage", artifact: "index.md", bundle: "ephemeral", okf_type: "bundle", next: ["0_ideation", "1_questions", "1_assess", "7_tdd"] },
+  "0_ideation": { coffee_name: "Green Bean Selection", plugin: "bean-roaster", skill: "ideator", artifact: "00_IDEATION.md", bundle: "ephemeral", okf_type: "ideation", next: ["3_grill_and_prd"] },
+  "1_questions": { coffee_name: "Cupping Form", plugin: "bean-roaster", skill: "cupping-form", artifact: "01_QUESTIONS.md", bundle: "ephemeral", okf_type: "questions", next: ["2_blind_research"] },
+  "2_blind_research": { coffee_name: "Blind Cupping", plugin: "bean-brewer", skill: "research", subagents: ["research", "context-mapping", "codebase-analysis", "pattern-recognition"], artifact: "02_EXTRACTION.md", bundle: "ephemeral", okf_type: "extraction", next: ["3_grill_and_prd"] },
+  "3_grill_and_prd": { coffee_name: "Dial-In", plugin: "bean-roaster", skill: "grill", followup_skill: "write-prd", subagents: ["copy-editor", "threat-modeler"], artifact: "03_PRD.md", durable_outputs: ["docs/CONTEXT.md", "docs/adr/"], bundle: "ephemeral", okf_type: "prd", next: ["4_spec"] },
+  "4_spec": { coffee_name: "Recipe Card (Spec)", plugin: "bean-brewer", skill: "to-spec", subagents: ["threat-modeler"], artifact: "04_SPEC.md", bundle: "ephemeral", okf_type: "specification", next: ["5_plan"] },
+  "5_plan": { coffee_name: "Recipe Card (Vertical Slices)", plugin: "bean-brewer", skill: "to-tickets", artifact: "05_PLAN.md", bundle: "ephemeral", okf_type: "plan", next: ["6a_council"] },
+  "6a_council": { coffee_name: "Q-Grader Panel", plugin: "bean-brewer", skill: "plan-council", subagents: ["code-inspection", "contract-auditor", "threat-modeler", "reviewer-product", "review-arbiter"], artifact: "06_COUNCIL.md", bundle: "ephemeral", okf_type: "council_review", next: ["6b_promote"] },
+  "6b_promote": { coffee_name: "Calling the Order", plugin: "bean-brewer", skill: "promote", script: "scripts/promote.py", artifact: "tickets/index.md", bundle: "ephemeral", okf_type: "tickets_index", next: ["7_tdd"] },
+  "7_tdd": { coffee_name: "Group Heads", plugin: "bean-brewer", subagents: ["code-implementation"], workspace_mode: "share", max_parallel_workers: 3, next: ["8_verify"] },
+  "8_verify": { coffee_name: "Tasting at the Pass", plugin: "bean-brewer", subagents: ["execution-verifier", "contract-auditor"], artifact: "07_VERIFICATION.md", walkthrough_artifact: "06_WALKTHROUGH.md", bundle: "durable_plans", okf_type: "verification", next: ["9_retro"] },
+  "9_retro": { coffee_name: "Backflush", plugin: "bean-core", skill: "retro", script: "scripts/retro.py", artifact: "08_RETRO.md", bundle: "durable_plans", okf_type: "retrospective", next: [] },
+};
+/* Not defined in stages.yaml; shown so the legacy origin is visible. Inferred from agents/expo.md. */
+const EXTERNAL_STAGES = {
+  "1_assess": { coffee_name: "Legacy Assessment", plugin: "bean-grinder", skill: "assess → synthesize", artifact: "05_PLAN.md (modernization slices)", external: true, next: ["6a_council"] },
+};
+const STAGE_ORDER = ["0_triage", "0_ideation", "1_questions", "1_assess", "2_blind_research", "3_grill_and_prd", "4_spec", "5_plan", "6a_council", "6b_promote", "7_tdd", "8_verify", "9_retro"];
+const BUNDLE_ROOTS = { ephemeral: ".scratch/<id>/", durable_plans: "plans/<id>/", durable_docs: "docs/" };
+
+const PLUGINS = {
+  "bean-core": { area: "core", role: "The Roastery Hub — registry, orchestration & governance", blurb: "Owns stages.yaml, @expo, OKF stamping, hooks, guardrails and the Backflush retro.", core: true },
+  "bean-roaster": { area: "roaster", role: "The Roaster — product discovery & Socratic PRD", blurb: "Ideation, cupping-form questions, grill interview, PRD with numbered ACs, ADRs." },
+  "bean-grinder": { area: "grinder", role: "The Grinder — legacy modernization & AST analysis", blurb: "Assesses tangled subsystems and synthesizes modernization slices (05_PLAN.md)." },
+  "bean-brewer": { area: "brewer", role: "The Brewer — spec, slices, council, TDD & verification", blurb: "Blind research, specs with SEAM test seams, vertical slices, Q-Grader council, Group Head TDD, Velocity Reaper." },
+  "bean-descale": { area: "descale", role: "The Descaler — security operations & harness immunity", blurb: "Vulnerability scans, kill-chain attack trees, adversarial-proofed patches, gotcha rules.", cta: "Shares @threat-modeler & guardrail ethos →", href: "#internals/threat-modeler" },
+  "bean-cup": { area: "cup", role: "The Cup — visual dashboard & workflow scanner", blurb: "Kanban tracker and state scanner that reads the OKF bundles bean-core standardizes.", cta: "Reads OKF bundles stamped by okf.py →", href: "#internals/okf-py" },
+};
+
+/* ------------------------------------------------------------------
+ * COMPONENTS (Level 3). `fns` entries are verified against source
+ * line numbers by tests/test_docs.py — keep {fn, file, lines} shape.
+ * ------------------------------------------------------------------ */
+const GROUPS = [
+  { id: "registry", name: "Registry", layer: "Declares the pipeline", items: ["stages-yaml"] },
+  { id: "orchestration", name: "Orchestration", layer: "Routes every order", items: ["expo", "triage"] },
+  { id: "reviewers", name: "Cross-cutting agents", layer: "Security & consensus", items: ["threat-modeler", "review-arbiter"] },
+  { id: "provenance", name: "Provenance engine", layer: "OKF v0.2 stamping", items: ["okf-py", "okf-legacy"] },
+  { id: "hooks", name: "Hooks & guardrails", layer: "Runs automatically", items: ["hooks-json", "rehydrate", "git-guardrails"] },
+  { id: "telemetry", name: "Telemetry", layer: "Learns from sessions", items: ["retro-skill", "retro-py"] },
+  { id: "governance", name: "Governance & quality", layer: "Rules, tests, install", items: ["rules", "tests", "install"] },
+  { id: "health", name: "Health", layer: "Known gaps", items: ["known-gaps"] },
+];
+
+const C = {
+  "stages-yaml": {
+    name: "stages.yaml", kind: "registry", file: "stages.yaml",
+    summary: "The canonical stage registry. Every plugin agrees on stage keys, artifacts and OKF types through this single file.",
+    body: `
+      <h3>Top-level keys</h3>
+      <table><tr><th>Key</th><th>Meaning</th></tr>
+      <tr><td><code>okf_version</code></td><td><code>"0.2"</code> — the Open Knowledge Format version every artifact is stamped with.</td></tr>
+      <tr><td><code>bundles</code></td><td>Roots: <code>ephemeral_root: .scratch</code>, <code>durable_plans_root: plans</code>, <code>durable_docs_root: docs</code>.</td></tr>
+      <tr><td><code>cup_sizes</code></td><td><code>ristretto | cortado | carafe</code> → ordered <code>stages</code> list + <code>gate</code>.</td></tr>
+      <tr><td><code>origins</code></td><td><code>greenfield | brownfield | legacy</code> → <code>entry_stage</code> + owning <code>plugin</code>.</td></tr>
+      <tr><td><code>stages</code></td><td>One entry per stage key (below).</td></tr></table>
+      <h3>Stage entry schema</h3>
+      <table><tr><th>Field</th><th>Meaning</th></tr>
+      <tr><td><code>coffee_name</code></td><td>Human name (e.g. “Blind Cupping”).</td></tr>
+      <tr><td><code>plugin</code> / <code>skill</code> / <code>followup_skill</code></td><td>Who implements the stage.</td></tr>
+      <tr><td><code>subagents</code></td><td>Subagents dispatched during the stage.</td></tr>
+      <tr><td><code>artifact</code> / <code>walkthrough_artifact</code> / <code>durable_outputs</code></td><td>What the stage writes.</td></tr>
+      <tr><td><code>bundle</code></td><td><code>ephemeral</code> (<code>.scratch/&lt;id&gt;/</code>, deleted at promote) or <code>durable_plans</code> (<code>plans/&lt;id&gt;/</code>).</td></tr>
+      <tr><td><code>okf_type</code></td><td>Value passed to <code>okf.py stamp --type</code>.</td></tr>
+      <tr><td><code>script</code>, <code>workspace_mode</code>, <code>max_parallel_workers</code></td><td>Execution hints (e.g. <code>7_tdd</code>: <code>share</code>, 3 workers).</td></tr>
+      <tr><td><code>next</code></td><td>Allowed successor stages (the routing graph).</td></tr></table>
+      <p><a href="#pipeline">Explore the registry interactively in the Pipeline view →</a></p>`,
+    flows: ["order-lifecycle"], related: ["triage", "expo", "okf-py"],
+  },
+  expo: {
+    name: "@expo — Head Barista", kind: "agent", file: "agents/expo.md",
+    summary: "The main-agent orchestrator (mainAgent: true). Calls orders and checks shots at the pass but never writes application source code — it delegates to fresh subagents to stay in the Smart Zone (< 100K tokens).",
+    body: `
+      <dl class="kv"><dt>Frontmatter</dt><dd><code>kind: local</code> · <code>mainAgent: true</code> · <code>subagent: false</code> · <code>model: inherit</code> · <code>commandExecutionPolicy: sandbox</code></dd>
+      <dt>Tools</dt><dd>${["invoke_subagent", "send_message", "manage_subagents", "ask_question", "run_command", "read_file", "write_file", "edit_file", "schedule"].map((t) => `<span class="chip">${t}</span>`).join("")}</dd></dl>
+      <h3>Non-negotiable invariants</h3>
+      <ol><li><strong>Zero direct source edits</strong> — may only write <code>.scratch/&lt;id&gt;/</code>, <code>plans/&lt;id&gt;/</code>, <code>docs/CONTEXT.md</code>, <code>docs/adr/</code>.</li>
+      <li><strong>Capped subagent payloads</strong> — every subagent writes its deliverable to an OKF file and returns ≤ 300 words + path + <code>PASS</code>/<code>BLOCKED</code>.</li>
+      <li><strong>Stateless phases</strong> — state lives in <code>index.md</code>/<code>log.md</code>; at phase boundaries the user is invited to start a fresh conversation (rehydrated by the SessionStart hook) or <code>/compact</code>.</li></ol>
+      <h3>QRSPI routing protocol</h3>
+      <table><tr><th>Step</th><th>What Expo does</th></tr>
+      <tr><td>0</td><td>Triage cup size × origin (<a href="#internals/triage">triage skill</a>).</td></tr>
+      <tr><td>1–2</td><td>Cupping form → blind research subagents that see <em>only</em> <code>01_QUESTIONS.md</code>.</td></tr>
+      <tr><td>3</td><td>Grill interview + PRD with <code>AC1..ACN</code>; <code>@copy-editor</code> and <code>@threat-modeler</code>.</td></tr>
+      <tr><td>4–5</td><td>Spec (SEAM-01..N, no brittle paths) → vertical slices (<code>Covers:</code>, <code>[AFK]/[HITL]</code>, <code>Depends On:</code>).</td></tr>
+      <tr><td>6A</td><td>Q-Grader council → <code>06_COUNCIL.md</code> (<a href="#flows/council">flow</a>).</td></tr>
+      <tr><td>6B</td><td>Spec PR, Four-Verdict review, <code>promote.py</code> (Sub-Issues + <code>git rm -r .scratch/&lt;id&gt;</code>).</td></tr>
+      <tr><td>7–8</td><td>Up to 3 Group Heads per wave (<code>Workspace: share</code>, <code>BEAN_WORKER_SLOT=1..3</code>) on <code>epic/&lt;id&gt;-&lt;slug&gt;</code>; verifier + contract auditor; auto-merge <code>[AFK]</code>.</td></tr>
+      <tr><td>9</td><td>Backflush retro (<a href="#internals/retro-py">retro.py</a>), recommend <code>/learn</code>.</td></tr></table>`,
+    flows: ["order-lifecycle", "council"], related: ["triage", "stages-yaml", "rehydrate", "retro-skill"],
+  },
+  triage: {
+    name: "triage skill (Stage 0)", kind: "skill", file: "skills/triage/SKILL.md",
+    summary: "Classifies every request on two orthogonal axes, initializes the OKF bundle, and routes via stages.yaml.",
+    body: `
+      <h3>Axis A — Cup size</h3>
+      <table><tr><th>Cup</th><th>Criteria</th><th>Gate</th></tr>
+      <tr><td><code>ristretto</code></td><td>≤ 2 files, ≤ 1 context window, unambiguous</td><td><code>direct_commit</code></td></tr>
+      <tr><td><code>cortado</code></td><td>Single-session, ≤ 4 vertical slices</td><td><code>artifact_gate</code></td></tr>
+      <tr><td><code>carafe</code></td><td>Multi-session, cross-cutting, high blast radius</td><td><code>spec_pr</code> + Sub-Issues</td></tr></table>
+      <h3>Axis B — Origin</h3>
+      <table><tr><th>Origin</th><th>Entry</th><th>Plugin</th></tr>
+      <tr><td><code>greenfield</code></td><td><code>0_ideation</code></td><td>bean-roaster</td></tr>
+      <tr><td><code>brownfield</code></td><td><code>1_questions</code></td><td>bean-roaster → bean-brewer</td></tr>
+      <tr><td><code>legacy</code></td><td><code>1_assess</code></td><td>bean-grinder</td></tr></table>
+      <h3>Operational steps</h3>
+      <ol><li>If ambiguous, <code>ask_question</code> with the recommended classification first.</li>
+      <li>Initialize the bundle and stamp the decision:</li></ol>
+      <pre><code>python3 scripts/okf.py init-bundle ".scratch/&lt;id&gt;" --id "&lt;id&gt;" --description "&lt;summary&gt;"
+python3 scripts/okf.py stamp ".scratch/&lt;id&gt;/index.md" --type bundle --stage 0_triage \\
+  --by "bean-core/triage" --stage-pair "cup_size=cortado" --stage-pair "origin=brownfield"</code></pre>
+      <div class="warnbox">Stamping <code>index.md</code> currently rewrites the bundle <code>id</code> to <code>index</code>. See <a href="#internals/known-gaps">Known gaps #1</a>.</div>`,
+    flows: ["order-lifecycle", "okf-stamp"], related: ["okf-py", "stages-yaml", "expo"],
+  },
+  "threat-modeler": {
+    name: "@threat-modeler", kind: "agent", file: "agents/threat-modeler.md",
+    summary: "OWASP ASVS Level 2 auditor for 04_SPEC.md, contracts/ and 05_PLAN.md. Read-only; evidence-quoted findings.",
+    body: `
+      <dl class="kv"><dt>Model</dt><dd><code>gemini-3.1-pro-preview</code></dd><dt>Tools</dt><dd><span class="chip">read_file</span><span class="chip">grep_search</span><span class="chip">list_directory</span></dd>
+      <dt>Used in</dt><dd><a class="chip link" href="#pipeline/3_grill_and_prd">3_grill_and_prd</a><a class="chip link" href="#pipeline/4_spec">4_spec</a><a class="chip link" href="#pipeline/6a_council">6a_council</a></dd></dl>
+      <h3>Evaluation domains</h3>
+      <ol><li>Authentication &amp; identity boundaries</li><li>Access control &amp; multi-tenancy (RBAC/ABAC, IDOR, tenant bleed)</li><li>Data sanitization &amp; injection defense</li><li>Concurrency &amp; DoS (deadlocks, races, rate limits)</li></ol>
+      <h3>Reporting rules</h3>
+      <ul><li>Every finding must <strong>quote</strong> the exact spec/contract/plan line.</li><li>Severity: <code>CRITICAL</code> exploitable · <code>HIGH</code> missing auth/rate limits · <code>MEDIUM</code> weak sanitization/logging · <code>LOW</code> headers/docs.</li><li>Max <strong>5 findings</strong> per round; “no findings” is preferred when deserved.</li></ul>`,
+    flows: ["council"], related: ["review-arbiter", "expo"],
+  },
+  "review-arbiter": {
+    name: "@review-arbiter", kind: "agent", file: "agents/review-arbiter.md",
+    summary: "Consensus engine for the Q-Grader council. Discards unquoted findings, deduplicates, scores the round, and proposes (never applies) plan patches.",
+    body: `
+      <dl class="kv"><dt>Model</dt><dd><code>gemini-3.1-pro-preview</code></dd><dt>Tools</dt><dd><span class="chip">read_file</span><span class="chip">grep_search</span><span class="chip">list_directory</span></dd></dl>
+      <h3>Consensus score</h3>
+      <pre><code>score = max(0, 100 − 25·C − 10·H − 3·M − 1·L)</code></pre>
+      <table><tr><th>Verdict</th><th>Condition</th></tr>
+      <tr><td class="pill-ok">CONVERGED</td><td>score ≥ 90 and C = 0 and H = 0 → Stage 6B human gate</td></tr>
+      <tr><td class="pill-warn">NEEDS_REVISION</td><td>otherwise, rounds 1–2</td></tr>
+      <tr><td class="pill-bad">CIRCUIT_BREAKER_TRIGGERED</td><td>round 3 reached without convergence → freeze and escalate</td></tr></table>
+      <p><a href="#playground">Try the calculator →</a></p>
+      <h3>Output: <code>06_COUNCIL.md</code></h3>
+      <ol><li>Decisions requiring human judgment</li><li>Proposed hardening directives (patch proposals)</li><li>Stakeholder scorecard &amp; consensus score</li></ol>`,
+    flows: ["council"], related: ["threat-modeler", "expo"],
+  },
+  "okf-py": {
+    name: "scripts/okf.py — OKF v0.2 engine", kind: "script", file: "scripts/okf.py",
+    summary: "The single source of truth for bundle initialization, deterministic frontmatter stamping and validation. Importable (retro.py uses it) and a CLI. PyYAML optional (falls back to a flat key: value parser).",
+    cli: `python3 scripts/okf.py init-bundle <bundle_dir> [--id ID] [--description TEXT]
+python3 scripts/okf.py stamp <file> --type TYPE --stage STAGE --by PRODUCER \\
+    [--name N] [--description D] [--status draft|stable|deprecated] \\
+    [--source REL_PATH]... [--stage-pair KEY=VALUE]... [--verified-by WHO] [--bundle-dir DIR]
+python3 scripts/okf.py validate <bundle_dir|file> [--require-stages]   # exit 1 on any error`,
+    body: `
+      <h3>What a stamped artifact looks like</h3>
+      <pre><code>---
+id: 04_SPEC                 # always == filename stem
+type: specification         # --type (okf_type in stages.yaml)
+name: Recipe Card
+description: ...
+status: draft               # draft | stable | deprecated
+stage: 4_spec
+generated: { by: bean-brewer/to-spec, at: '2026-11-06T17:00:00Z' }
+verified: [ { by: execution-verifier, at: ... } ]   # appended, never replaced
+sources:
+  - { id: 03_PRD, resource: 03_PRD.md, last_modified: ..., sha256: ... }
+stages_completed:           # merged: existing ∪ --stage-pair ∪ {stage: "by (at)"}
+  4_spec: bean-brewer/to-spec (2026-11-06T17:00:00Z)
+---</code></pre>
+      <h3>Validation rules</h3>
+      <ul><li>Frontmatter must start on line 1 and close with <code>---</code>; YAML must be a mapping.</li>
+      <li>Root <code>index.md</code>: <code>type: bundle</code> and an <code>id</code>.</li>
+      <li>Every other <code>.md</code>: <code>id</code> == stem, <code>type</code> present.</li>
+      <li><code>--require-stages</code>: non-empty <code>stages_completed</code> and <code>generated.{by,at}</code>.</li>
+      <li><code>sources[].resource</code>, <code>inputs</code>, <code>outputs</code>, <code>related_tables</code>: absolute paths are errors; unresolvable relative paths are warnings.</li>
+      <li>Sub-directories with content need their own <code>index.md</code>; <code>references/joins</code> files must be <code>&lt;left&gt;___&lt;right&gt;.md</code>.</li>
+      <li>Root-level files are validated too (fixes the upstream <code>rel_root == Path(".")</code> skip bug).</li></ul>`,
+    fns: [
+      { fn: "extract_frontmatter", file: "scripts/okf.py", lines: [60, 98], desc: "Split leading <code>---</code> block from body; returns (fm, body, errors). Uses PyYAML when available." },
+      { fn: "render_markdown", file: "scripts/okf.py", lines: [101, 108], desc: "Serialize frontmatter (insertion order preserved) + body." },
+      { fn: "append_log", file: "scripts/okf.py", lines: [111, 121], desc: "Append <code>## &lt;ts&gt; — &lt;stage&gt;</code> entry (by / artifact / note) to <code>log.md</code>." },
+      { fn: "refresh_index", file: "scripts/okf.py", lines: [124, 160], desc: "Rewrite <code>index.md</code>: force <code>type: bundle</code>, <code>okf_version</code>, <code>updated_at</code>; regenerate the Bundle Catalog table from sibling <code>*.md</code> frontmatter. Preserves other keys." },
+      { fn: "init_bundle", file: "scripts/okf.py", lines: [163, 167], desc: "mkdir + refresh_index + first log entry (stage <code>0_triage</code>)." },
+      { fn: "stamp_file", file: "scripts/okf.py", lines: [170, 256], desc: "Core of provenance. Rebuilds reserved keys, hashes sources (SHA-256 + mtime), merges <code>stages_completed</code>, keeps non-reserved keys, then refreshes index and appends to log if they exist. <a href=\"#flows/okf-stamp\">See flow</a>." },
+      { fn: "validate_file", file: "scripts/okf.py", lines: [259, 351], desc: "Per-file rules listed above." },
+      { fn: "validate_bundle", file: "scripts/okf.py", lines: [354, 423], desc: "Walks the bundle (skipping dot-dirs, <code>log.md</code>, <code>viz.html</code>), aggregating file results." },
+      { fn: "main", file: "scripts/okf.py", lines: [426, 482], desc: "argparse CLI dispatch for <code>init-bundle</code> / <code>stamp</code> / <code>validate</code>." },
+    ],
+    flows: ["okf-stamp", "post-tool-use", "retro"], related: ["triage", "retro-py", "okf-legacy", "hooks-json"],
+  },
+  "okf-legacy": {
+    name: "okf_stamp.py & validate_okf.py (legacy)", kind: "script", file: "scripts/okf_stamp.py",
+    summary: "Standalone predecessors of okf.py kept for backwards compatibility. Same CLI shape (init-bundle / stamp, and a validator), but okf_stamp.py hard-requires PyYAML.",
+    body: `<p>Prefer <a href="#internals/okf-py"><code>okf.py</code></a> — it merges both and is what <code>retro.py</code>, the hooks and the skills call. Source: <a href="${src("scripts/okf_stamp.py")}">okf_stamp.py</a> · <a href="${src("scripts/validate_okf.py")}">validate_okf.py</a>.</p>`,
+    fns: [
+      { fn: "stamp_file", file: "scripts/okf_stamp.py", lines: [118, 205], desc: "Legacy stamper." },
+      { fn: "validate_bundle", file: "scripts/validate_okf.py", lines: [173, 243], desc: "Legacy validator." },
+    ],
+    flows: [], related: ["okf-py"],
+  },
+  "hooks-json": {
+    name: "hooks.json — lifecycle hooks", kind: "config", file: "hooks.json",
+    summary: "Wires three bean-core scripts into the Antigravity agent loop so governance happens without anyone remembering to run it.",
+    body: `
+      <table><tr><th>Event</th><th>Matcher</th><th>Command</th><th>Timeout</th><th>Effect</th></tr>
+      <tr><td><code>SessionStart</code></td><td>—</td><td><code>python3 ./scripts/rehydrate.py</code></td><td>15 s</td><td>Injects active-bundle context. <a href="#flows/session-start">flow</a></td></tr>
+      <tr><td><code>PreToolUse</code></td><td><code>run_command</code></td><td><code>python3 ./scripts/git_guardrails.py</code></td><td>10 s</td><td>Can <strong>deny</strong> the command. <a href="#flows/pre-tool-use">flow</a></td></tr>
+      <tr><td><code>PostToolUse</code></td><td><code>write_file|edit_file|replace_file_content|write_to_file</code></td><td><code>python3 ./scripts/okf.py validate .scratch 2&gt;/dev/null || true</code></td><td>15 s</td><td>Advisory only — exit status forced to 0. <a href="#flows/post-tool-use">flow</a></td></tr></table>
+      <p class="muted">Schema constraints enforced by tests: SessionStart is a flat list (no nested <code>hooks</code>); all timeouts ≤ 30 s.</p>`,
+    flows: ["session-start", "pre-tool-use", "post-tool-use"], related: ["rehydrate", "git-guardrails", "okf-py"],
+  },
+  rehydrate: {
+    name: "scripts/rehydrate.py — SessionStart", kind: "script", file: "scripts/rehydrate.py",
+    summary: "Finds active .scratch/*/index.md bundles in the workspace and injects a system message so a fresh conversation resumes mid-pipeline.",
+    cli: `echo '{"workspacePaths": ["/path/to/repo"]}' | python3 scripts/rehydrate.py
+python3 scripts/rehydrate.py --workspace /path/to/repo   # repeatable; falls back to $PWD`,
+    body: `
+      <h3>Input resolution</h3><p><code>--workspace</code> flags, then stdin JSON keys <code>workspacePaths[]</code>, <code>workspacePath</code>, <code>cwd</code>; if none, the current directory.</p>
+      <h3>Output</h3>
+      <pre><code>{"injectSteps": [{"role": "system", "content": "[Bean-Core Session Rehydration] ...",
+                  "systemMessage": {"systemMessage": "..."}}]}
+{}   # when no bundle is found</code></pre>
+      <p>Per bundle it reports <code>id</code>, <code>name</code>, path, <code>stage</code> (default <code>0_triage</code>), artifacts and description.</p>`,
+    fns: [
+      { fn: "parse_frontmatter", file: "scripts/rehydrate.py", lines: [25, 48], desc: "Lenient frontmatter parser; returns {} on any problem (a hook must never crash)." },
+      { fn: "find_active_bundles", file: "scripts/rehydrate.py", lines: [51, 85], desc: "Glob <code>&lt;ws&gt;/.scratch/*/index.md</code>, de-duplicate by resolved path, collect metadata + artifact list." },
+      { fn: "rehydrate_workspace", file: "scripts/rehydrate.py", lines: [88, 112], desc: "Format the injected system message." },
+      { fn: "main", file: "scripts/rehydrate.py", lines: [115, 144], desc: "Gather workspace paths, print JSON, always exit 0." },
+    ],
+    flows: ["session-start"], related: ["hooks-json", "okf-py", "expo"],
+  },
+  "git-guardrails": {
+    name: "scripts/git_guardrails.py — PreToolUse", kind: "script", file: "scripts/git_guardrails.py",
+    summary: "Denies destructive git commands before they run. Splits compound shell commands and checks each segment.",
+    body: `
+      <h3>Rules</h3>
+      <table><tr><th>#</th><th>Denied</th><th>Still allowed</th></tr>
+      <tr><td>1</td><td><code>git push --force</code>, <code>-f</code>, <code>+src:dst</code> refspecs</td><td><code>--force-with-lease</code>, <code>--force-if-includes</code></td></tr>
+      <tr><td>2</td><td><code>git reset … --hard</code></td><td><code>--soft</code>, <code>--mixed</code></td></tr>
+      <tr><td>3</td><td><code>git clean -f</code>, <code>-fd</code>, <code>-fx</code>, <code>--force</code></td><td>anything with <code>-n</code>/<code>--dry-run</code></td></tr>
+      <tr><td>4</td><td><code>git branch -D main|master</code>, <code>--delete --force main|master</code></td><td>deleting other branches</td></tr></table>
+      <h3>Design choices</h3>
+      <ul><li><strong>Fail-open</strong>: empty stdin or invalid JSON → <code>allow</code> (a broken hook must not wedge the agent).</li>
+      <li>Fast path: commands without the substring <code>git</code> are allowed immediately.</li>
+      <li>One global option is tolerated before the subcommand (e.g. <code>git -C repo push -f</code> is caught).</li>
+      <li>Command extraction order: <code>command</code> → <code>CommandLine</code> → <code>tool_input|toolInput.{CommandLine,command,cmd}</code> → <code>toolCall.args|arguments.{…}</code>.</li></ul>
+      <p><a href="#playground">Test commands live in the Playground →</a></p>`,
+    cli: `echo '{"tool_input": {"CommandLine": "git push -f"}}' | python3 scripts/git_guardrails.py
+# {"decision": "deny", "reason": "Destructive \`git push --force\` is blocked ..."}`,
+    fns: [
+      { fn: "extract_command", file: "scripts/git_guardrails.py", lines: [23, 42], desc: "Find the command string in any supported hook payload shape." },
+      { fn: "evaluate_command", file: "scripts/git_guardrails.py", lines: [45, 96], desc: "Segment split + 4 regex rules → <code>{decision, reason}</code>." },
+      { fn: "main", file: "scripts/git_guardrails.py", lines: [99, 120], desc: "stdin → verdict JSON on stdout; always exit 0." },
+    ],
+    flows: ["pre-tool-use"], related: ["hooks-json", "rules"],
+  },
+  "retro-skill": {
+    name: "retro skill (Stage 9 Backflush)", kind: "skill", file: "skills/retro/SKILL.md",
+    summary: "Closes cortado and carafe workflows: mine the transcript, validate the bundle, and turn friction into durable /learn rules.",
+    body: `
+      <ol><li><code>python3 scripts/retro.py --transcript &lt;transcript.jsonl&gt; --bundle-dir plans/&lt;id&gt;</code></li>
+      <li><code>python3 scripts/okf.py validate plans/&lt;id&gt; --require-stages</code></li>
+      <li>If <code>08_RETRO.md</code> shows ERROR steps or 3+ retry streaks, write a concise rule and recommend <code>/learn</code>.</li></ol>
+      <p>Real example: <a href="${src("evals/08_RETRO_coffee_mood_evidence.md")}">evals/08_RETRO_coffee_mood_evidence.md</a> — 646 steps, 41 streaks, ~278K tokens (Smart Zone <span class="pill-bad">EXCEEDED</span>).</p>`,
+    flows: ["retro"], related: ["retro-py", "okf-py"],
+  },
+  "retro-py": {
+    name: "scripts/retro.py — transcript miner", kind: "script", file: "scripts/retro.py",
+    summary: "Deterministic metrics from transcript.jsonl, written as an OKF-stamped 08_RETRO.md.",
+    cli: `python3 scripts/retro.py --transcript path/to/transcript.jsonl --bundle-dir plans/<id> [--output FILE] [--json]`,
+    body: `
+      <table><tr><th>Metric</th><th>How</th></tr>
+      <tr><td>Steps</td><td>Count of JSON-object lines (blank/invalid lines skipped).</td></tr>
+      <tr><td>Tool calls</td><td><code>tool_calls[]</code>/<code>toolCalls[]</code> (<code>name</code>, <code>tool_name</code>, <code>toolName</code>, <code>function.name</code>), <code>toolCall</code>, or <code>tool_name</code>.</td></tr>
+      <tr><td>ERROR steps</td><td><code>status == "ERROR"</code> (case-insensitive) or truthy <code>error</code>.</td></tr>
+      <tr><td>Retry streaks</td><td>Runs of ≥ 3 consecutive calls to the same tool.</td></tr>
+      <tr><td>Tokens</td><td><code>bytes // 4</code>; Smart Zone pass if &lt; <code>SMART_ZONE_TOKEN_LIMIT = 100_000</code>.</td></tr></table>
+      <p>Stamped with <code>type: retrospective</code>, <code>stage: 9_retro</code>, <code>status: stable</code> and stage pairs <code>smart_zone</code>, <code>error_steps</code>, <code>retry_streaks</code>.</p>`,
+    fns: [
+      { fn: "extract_tool_names", file: "scripts/retro.py", lines: [33, 56], desc: "Normalize tool names across transcript schemas." },
+      { fn: "analyze_transcript", file: "scripts/retro.py", lines: [59, 135], desc: "Single pass over lines; then streak detection over the flattened tool sequence." },
+      { fn: "generate_retro_markdown", file: "scripts/retro.py", lines: [138, 182], desc: "Summary table, streak list, tool breakdown (sorted by count desc)." },
+      { fn: "write_retro_report", file: "scripts/retro.py", lines: [185, 216], desc: "Ensure bundle, write report, <code>okf.stamp_file(...)</code>." },
+      { fn: "main", file: "scripts/retro.py", lines: [219, 241], desc: "CLI; prints a one-line summary or JSON metrics." },
+    ],
+    flows: ["retro"], related: ["retro-skill", "okf-py"],
+  },
+  rules: {
+    name: "rules/AGENTS.md — governance", kind: "rule", file: "rules/AGENTS.md",
+    summary: "Always-on rules loaded into every agent session when bean-core is enabled.",
+    body: `
+      <ol><li><strong>Smart Zone discipline</strong> — Expo delegates; subagents return ≤ 300 words + path + PASS/BLOCKED; state persists in <code>index.md</code>/<code>log.md</code>.</li>
+      <li><strong>Order triage</strong> — cup size × origin before any work.</li>
+      <li><strong>OKF invariants</strong> — never hand-write timestamps, hashes or <code>stages_completed</code>; <code>id</code> == stem; relative paths only.</li>
+      <li><strong>Safety</strong> — git guardrails; Backflush retro for cortado/carafe.</li></ol>
+      <p class="muted">Must not carry YAML frontmatter (enforced by tests).</p>`,
+    flows: [], related: ["expo", "triage", "okf-py", "git-guardrails"],
+  },
+  tests: {
+    name: "tests/ — verification", kind: "test", file: "tests/test_okf.py",
+    summary: "stdlib unittest suites. Run with python3 -m unittest discover -s tests -v (needs PyYAML).",
+    body: `
+      <table><tr><th>Suite</th><th>Covers</th></tr>
+      <tr><td><code>TestOKFEngine</code></td><td>init-bundle, stamp (stem id, sources hash, pairs, log), validate root-file bug fix.</td></tr>
+      <tr><td><code>TestRehydrateHook</code></td><td>Empty workspace → <code>{}</code>; active bundle → <code>injectSteps</code>.</td></tr>
+      <tr><td><code>TestGitGuardrailsHook</code></td><td>Denies the 4 destructive patterns; allows safe and <code>--force-with-lease</code>.</td></tr>
+      <tr><td><code>TestRetroMiner</code></td><td>Metrics + OKF-stamped <code>08_RETRO.md</code>.</td></tr>
+      <tr><td><code>TestBeanCorePluginSchema</code></td><td>plugin.json, stages.yaml, hooks.json, agents, skills, rules, scripts.</td></tr>
+      <tr><td><code>tests/test_docs.py</code></td><td>Keeps this page in sync: stage data matches <code>stages.yaml</code>, every function reference points at a real <code>def</code> line, every script is documented.</td></tr></table>`,
+    flows: [], related: ["okf-py", "git-guardrails", "rehydrate", "retro-py"],
+  },
+  install: {
+    name: "install.sh & plugin.json", kind: "config", file: "install.sh",
+    summary: "Copies plugin files into ~/.gemini/config/plugins/bean-core. plugin.json declares name, version 1.0.0, Apache-2.0.",
+    body: `<p>Copies <code>plugin.json</code>, <code>stages.yaml</code>, <code>README.md</code>, <code>skills/</code>, <code>agents/</code>, <code>rules/</code>, <code>hooks.json</code>, <code>scripts/</code>. It is a copy, not a symlink, so re-run after every change (or symlink the repo for development).</p>`,
+    flows: [], related: ["hooks-json"],
+  },
+  "known-gaps": {
+    name: "Known gaps", kind: "health", file: null,
+    summary: "Issues found while documenting the implementation. Listed so readers trust the rest of the page.",
+    body: `
+      <ol>
+      <li><strong>Stamping <code>index.md</code> clobbers the bundle id.</strong> <code>stamp_file</code> sets <code>id</code> to the file stem, so the triage skill's <code>okf.py stamp .scratch/&lt;id&gt;/index.md</code> rewrites <code>id: &lt;id&gt;</code> to <code>id: index</code>; rehydration then reports bundle <code>index</code>. (Reproduced.)</li>
+      <li><strong>Bundle stage never advances.</strong> <code>rehydrate.py</code> reads <code>stage</code> from <code>index.md</code>, but only an explicit stamp of <code>index.md</code> sets it; <code>refresh_index</code> preserves the old value.</li>
+      <li><strong><code>1_assess</code> is referenced but undefined.</strong> <code>origins.legacy.entry_stage</code> and <code>0_triage.next</code> point at it; <code>stages:</code> has no entry. (Shown dashed in the Pipeline view.)</li>
+      <li><strong>Hook working directory is ambiguous.</strong> Commands use plugin-relative <code>./scripts/…</code> while PostToolUse validates workspace-relative <code>.scratch</code>; both cannot hold for one cwd.</li>
+      <li><strong>Undefined agent references.</strong> <code>@review-arbiter</code> mentions <code>@architect</code> and <code>@auditor</code>, which no plugin defines.</li>
+      <li><strong>Vendored scripts.</strong> <code>okf.py</code>, <code>git_guardrails.py</code> and <code>rehydrate.py</code> are byte-identical copies in bean-brewer today; nothing prevents drift. <code>rules/AGENTS.md</code> lists <code>scripts/plan_lint.py</code>, which lives in bean-brewer.</li>
+      <li><strong>Schema test path</strong> was hard-coded to a past conversation's scratch dir, so the suite failed elsewhere — <span class="pill-ok">fixed</span> (now uses the repo root).</li>
+      </ol>`,
+    flows: [], related: ["okf-py", "rehydrate", "stages-yaml", "hooks-json"],
+  },
+};
+
+/* ------------------------------------------------------------------
+ * FLOWS (sequence diagrams). Step: [fromLane, toLane, label, detail, link?]
+ * ------------------------------------------------------------------ */
+const FLOWS = {
+  "order-lifecycle": {
+    title: "An order, end to end (cortado / carafe)",
+    desc: "How Expo moves a brownfield feature request through the registry without ever touching source code.",
+    lanes: ["User", "@expo", "triage", "okf.py", "Specialist plugins", "Subagents"],
+    steps: [
+      [0, 1, "feature request", "The user describes a change. Expo is the main agent.", "#internals/expo"],
+      [1, 2, "classify cup × origin", "The triage skill sizes the blast radius (ristretto / cortado / carafe) and the origin. Ambiguity → ask_question with a (Recommended) option.", "#internals/triage"],
+      [2, 3, "init-bundle .scratch/<id>", "Creates index.md (type: bundle, okf_version 0.2) and log.md. Never hand-written.", "#internals/okf-py"],
+      [2, 3, "stamp index.md cup_size/origin", "Records the triage decision as stages_completed pairs.", "#flows/okf-stamp"],
+      [1, 4, "route via stages.yaml", "Brownfield enters at 1_questions (bean-roaster cupping-form → 01_QUESTIONS.md).", "#pipeline/1_questions"],
+      [4, 5, "blind research (01_QUESTIONS only)", "Read-only subagents never see the feature prompt or Proposed ADRs — this keeps the extraction factual.", "#pipeline/2_blind_research"],
+      [5, 1, "≤300 words + path + PASS", "Capped payloads keep Expo inside the Smart Zone; detail lives in 02_EXTRACTION.md.", "#internals/expo"],
+      [1, 4, "grill → PRD → spec → slices", "03_PRD.md (AC1..N) → 04_SPEC.md (SEAM-01..N) → 05_PLAN.md (Covers: ACn). Each stamped with okf.py.", "#pipeline/3_grill_and_prd"],
+      [4, 5, "Q-Grader council", "Reviewers + @review-arbiter produce 06_COUNCIL.md with a consensus score.", "#flows/council"],
+      [1, 0, "approval gate", "Cortado: RequestFeedback Proceed button. Carafe: Spec PR, Four-Verdict review, promote.py.", "#pipeline/6b_promote"],
+      [1, 5, "Group Heads (≤3, share)", "@code-implementation per slice with BEAN_WORKER_SLOT, one atomic commit each, onto epic/<id>-<slug>.", "#pipeline/7_tdd"],
+      [5, 1, "verifier verdict", "@execution-verifier checks exit codes, AC→test mapping and bypasses; @contract-auditor checks contracts.", "#pipeline/8_verify"],
+      [1, 3, "retro.py → 08_RETRO.md", "Backflush mines the transcript and stamps the retrospective into plans/<id>/.", "#flows/retro"],
+    ],
+  },
+  "session-start": {
+    title: "SessionStart: rehydrating a fresh conversation",
+    desc: "Why you can start a new chat mid-pipeline without losing your place.",
+    lanes: ["Antigravity", "rehydrate.py", "Workspace FS", "Model context"],
+    steps: [
+      [0, 1, "spawn hook (stdin JSON, 15 s)", "hooks.json → python3 ./scripts/rehydrate.py with workspacePaths / workspacePath / cwd on stdin.", "#internals/hooks-json"],
+      [1, 1, "resolve workspaces", "--workspace flags, then stdin keys, else the current directory.", src("scripts/rehydrate.py", 115, 141)],
+      [1, 2, "glob .scratch/*/index.md", "find_active_bundles de-duplicates by resolved path.", src("scripts/rehydrate.py", 51, 85)],
+      [2, 1, "frontmatter + artifacts", "id, name, description, stage (default 0_triage), status, stages_completed, sibling *.md list.", src("scripts/rehydrate.py", 25, 48)],
+      [1, 0, "{injectSteps:[system msg]} or {}", "rehydrate_workspace formats one line per bundle. Always exit 0.", src("scripts/rehydrate.py", 88, 112)],
+      [0, 3, "inject system message", "The model reads index.md and log.md and resumes at the recorded stage.", "#internals/expo"],
+    ],
+  },
+  "pre-tool-use": {
+    title: "PreToolUse: git guardrails",
+    desc: "Every run_command passes through the guardrail before it executes.",
+    lanes: ["Agent", "Antigravity", "git_guardrails.py"],
+    steps: [
+      [0, 1, "run_command(…)", "Any shell command, possibly compound.", null],
+      [1, 2, "hook payload on stdin (10 s)", "Matcher run_command in hooks.json.", "#internals/hooks-json"],
+      [2, 2, "extract_command", "Looks in command, CommandLine, tool_input/toolInput, toolCall.args/arguments. Invalid JSON → allow (fail-open).", src("scripts/git_guardrails.py", 23, 42)],
+      [2, 2, "no 'git' → allow", "Cheap fast path for the vast majority of commands.", src("scripts/git_guardrails.py", 46, 47)],
+      [2, 2, "split on && || ; | \\n, test 4 rules", "push --force (lease allowed) · reset --hard · clean -f (dry-run allowed) · branch -D main|master.", src("scripts/git_guardrails.py", 49, 96)],
+      [2, 1, "{decision: deny, reason} | allow", "JSON on stdout.", null],
+      [1, 0, "blocked with reason / executed", "A deny is surfaced to the agent so it can choose a safe alternative.", "#playground"],
+    ],
+  },
+  "post-tool-use": {
+    title: "PostToolUse: advisory OKF validation",
+    desc: "After any file write, the .scratch bundles are re-validated.",
+    lanes: ["Agent", "Antigravity", "okf.py", ".scratch/"],
+    steps: [
+      [0, 1, "write_file / edit_file", "Matcher: write_file|edit_file|replace_file_content|write_to_file.", "#internals/hooks-json"],
+      [1, 2, "okf.py validate .scratch", "15 s timeout; stderr discarded.", null],
+      [2, 3, "validate_bundle walk", "Frontmatter, id == stem, type, relative paths, sub-dir index.md.", src("scripts/okf.py", 354, 423)],
+      [2, 1, "[ERROR]/[WARN] lines; exit forced 0", "`|| true` means the hook never blocks — findings are informational.", "#internals/known-gaps"],
+    ],
+  },
+  "okf-stamp": {
+    title: "okf.py stamp: deterministic provenance",
+    desc: "What happens inside stamp_file when a skill finishes an artifact.",
+    lanes: ["Skill / agent", "okf.py", "Artifact", "Upstream sources", "index.md", "log.md"],
+    steps: [
+      [0, 1, "stamp 04_SPEC.md …", "Called by every stage skill as `okf.py stamp <file> --type --stage --by [--source] [--stage-pair]`; the LLM never writes timestamps or hashes.", "#internals/okf-py"],
+      [1, 2, "extract_frontmatter", "Existing frontmatter + body, or a new body '# <name>'.", src("scripts/okf.py", 187, 190)],
+      [1, 1, "rebuild reserved keys", "id = stem, type, name, description, status, stage, generated {by, at}; verified[] appended.", src("scripts/okf.py", 192, 207)],
+      [1, 3, "resolve --source, hash", "Strip leading '/', resolve vs file dir then bundle dir; record last_modified + sha256.", src("scripts/okf.py", 209, 228)],
+      [1, 1, "merge stages_completed", "existing ∪ --stage-pair ∪ {stage: 'by (at)'}; non-reserved keys preserved.", src("scripts/okf.py", 230, 249)],
+      [1, 2, "write rendered markdown", "render_markdown keeps key order.", src("scripts/okf.py", 251, 251)],
+      [1, 4, "refresh_index (if present)", "Regenerates the Bundle Catalog table.", src("scripts/okf.py", 124, 160)],
+      [1, 5, "append_log (if present)", "'## <ts> — <stage>' with by / artifact / note.", src("scripts/okf.py", 111, 121)],
+    ],
+  },
+  council: {
+    title: "Stage 6A: Q-Grader council consensus",
+    desc: "How plan reviews converge — or trip the circuit breaker — before any human reads them.",
+    lanes: ["plan-council", "Reviewers", "@review-arbiter", "Architect / Expo", "Human"],
+    steps: [
+      [0, 0, "plan_lint.py + okf validate", "Zero-token pre-lint (bean-brewer) catches structural problems before spending model calls.", "#pipeline/6a_council"],
+      [0, 1, "dispatch risk-tiered reviewers", "@code-inspection, @contract-auditor, @threat-modeler, @reviewer-product — read-only.", "#internals/threat-modeler"],
+      [1, 2, "findings with direct quotes", "Unquoted findings are discarded. Threat modeler: max 5 per round.", "#internals/review-arbiter"],
+      [2, 2, "dedupe + calibrate severity", "CRITICAL reserved for Stage 7 blockers, security exposure or data loss.", null],
+      [2, 2, "score = 100 − 25C − 10H − 3M − L", "CONVERGED needs ≥ 90 with zero Critical and High.", "#playground"],
+      [2, 3, "propose-only patches", "The arbiter never edits 05_PLAN.md; the architect applies or rejects with justification.", null],
+      [3, 1, "revise (≤ 3 rounds)", "Round 3 without convergence → CIRCUIT_BREAKER_TRIGGERED, plan frozen.", null],
+      [2, 4, "06_COUNCIL.md", "Human decisions first, then hardening directives, then the scorecard.", "#pipeline/6b_promote"],
+    ],
+  },
+  retro: {
+    title: "Stage 9: Backflush retrospective",
+    desc: "Turning a session transcript into metrics and durable rules.",
+    lanes: ["Expo / user", "retro.py", "transcript.jsonl", "okf.py", "plans/<id>/"],
+    steps: [
+      [0, 1, "--transcript … --bundle-dir plans/<id>", "Run by the retro skill at the end of cortado/carafe work.", "#internals/retro-skill"],
+      [1, 4, "ensure index.md (init_bundle)", "Creates the durable bundle if missing.", src("scripts/retro.py", 191, 193)],
+      [1, 2, "read bytes; parse lines", "Steps, ERROR status, tool names; tokens ≈ bytes // 4.", src("scripts/retro.py", 59, 106)],
+      [1, 1, "detect ≥3 same-tool streaks", "Signals missing CLI affordances or brittle prompts.", src("scripts/retro.py", 108, 121)],
+      [1, 4, "write 08_RETRO.md", "generate_retro_markdown: summary, streaks, tool breakdown.", src("scripts/retro.py", 138, 182)],
+      [1, 3, "stamp_file retrospective / 9_retro", "Pairs: smart_zone, error_steps, retry_streaks.", src("scripts/retro.py", 200, 214)],
+      [1, 0, "summary → recommend /learn", "Errors or streaks become a rule via the /learn slash command.", null],
+    ],
+  },
+};
+
+/* ------------------------------------------------------------------
+ * ROUTER
+ * ------------------------------------------------------------------ */
+const VIEWS = ["overview", "pipeline", "internals", "flows", "playground"];
+const state = { cup: "cortado", origin: "brownfield", stage: null, comp: null, flow: "order-lifecycle", step: -1, timer: null };
+
+function route() {
+  const [view = "overview", arg = ""] = decodeURIComponent(location.hash.slice(1)).split("/");
+  const v = VIEWS.includes(view) ? view : "overview";
+  if (state.view !== v) { window.scrollTo(0, 0); state.view = v; }
+  VIEWS.forEach((name) => { $(`#view-${name}`).hidden = name !== v; });
+  document.querySelectorAll("nav.views a").forEach((a) => {
+    if (a.dataset.view === v) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  stopTimers();
+  if (v === "overview") renderOverview();
+  if (v === "pipeline") { state.stage = STAGES[arg] || EXTERNAL_STAGES[arg] ? arg : state.stage; renderPipeline(); }
+  if (v === "internals") { state.comp = C[arg] ? arg : null; renderInternals(); }
+  if (v === "flows") { if (FLOWS[arg] && arg !== state.flow) { state.flow = arg; state.step = -1; } renderFlows(); }
+  if (v === "playground") renderPlayground();
+  renderCrumbs(v, arg);
+}
+function renderCrumbs(v, arg) {
+  const parts = [`<a href="#overview">bean-core</a>`];
+  let level = "LEVEL 1";
+  if (v === "pipeline") { parts.push(`<a href="#pipeline">Pipeline</a>`); level = "LEVEL 2"; if (state.stage) { parts.push(esc(state.stage)); } }
+  if (v === "internals") {
+    parts.push(`<a href="#internals">Internals</a>`); level = "LEVEL 3";
+    if (state.comp) { const g = GROUPS.find((x) => x.items.includes(state.comp)); parts.push(esc(g.name), esc(C[state.comp].name)); }
+  }
+  if (v === "flows") { parts.push(`<a href="#flows">Flows</a>`, esc(FLOWS[state.flow].title)); level = "FLOW"; }
+  if (v === "playground") { parts.push("Playground"); level = "TRY IT"; }
+  $("#crumbs").innerHTML = parts.join(`<span class="sep">›</span>`) + `<span class="level-badge">${level}</span>`;
+}
+function stopTimers() { if (state.timer) { clearInterval(state.timer); state.timer = null; } }
+
+/* ------------------------------------------------------------------
+ * OVERVIEW
+ * ------------------------------------------------------------------ */
+function stagesOf(plugin) { return STAGE_ORDER.filter((k) => (STAGES[k] || EXTERNAL_STAGES[k]).plugin === plugin); }
+function renderOverview() {
+  $("#swarm").innerHTML = Object.entries(PLUGINS).map(([name, p]) => {
+    const st = stagesOf(name);
+    const target = p.href || (p.core ? "#internals" : st.length ? `#pipeline/${st[0]}` : "#pipeline");
+    return `<a class="plugin ${p.core ? "core" : ""}" style="grid-area:${p.area};text-decoration:none;color:inherit" href="${target}">
+      <h3>${p.core ? "☕ " : ""}${name}</h3><div class="role">${esc(p.role)}</div>
+      <div class="muted" style="font-size:.88rem">${esc(p.blurb)}</div>
+      <div style="margin-top:6px">${st.map((s) => `<span class="chip">${s}</span>`).join("") || `<span class="chip">cross-cutting</span>`}</div>
+      <span class="cta">${p.cta || (p.core ? "Drill into bean-core internals →" : "See its stages in the pipeline →")}</span></a>`;
+  }).join("");
+  $("#layers").innerHTML = GROUPS.filter((g) => g.id !== "health").map((g) => `
+    <a class="layer" style="text-decoration:none;color:inherit" href="#internals/${g.items[0]}">
+      <b>${esc(g.name)}</b><span><span class="muted">${esc(g.layer)} —</span> ${g.items.map((i) => `<span class="chip">${esc(C[i].name.split(" — ")[0])}</span>`).join("")}</span></a>`).join("");
+}
+
+/* ------------------------------------------------------------------
+ * PIPELINE
+ * ------------------------------------------------------------------ */
+function stageDef(k) { return STAGES[k] || EXTERNAL_STAGES[k]; }
+function computePath(cup, origin) {
+  if (cup === "ristretto") return CUP_SIZES.ristretto.stages.slice();
+  const allowed = new Set([...CUP_SIZES[cup].stages, "0_ideation", "1_assess"]);
+  const path = ["0_triage"];
+  let cur = ORIGINS[origin].entry_stage;
+  const guard = new Set();
+  while (cur && !guard.has(cur)) {
+    guard.add(cur); path.push(cur);
+    const nxt = (stageDef(cur).next || []).filter((n) => allowed.has(n));
+    cur = nxt[0];
+  }
+  return path;
+}
+function segButtons(el, items, current, onPick) {
+  el.innerHTML = items.map(([k, label]) => `<button type="button" data-k="${k}" aria-pressed="${k === current}">${label}</button>`).join("");
+  el.onclick = (e) => { const b = e.target.closest("button"); if (b) onPick(b.dataset.k); };
+}
+function renderPipeline() {
+  segButtons($("#cup-seg"), Object.entries(CUP_SIZES).map(([k, v]) => [k, v.label]), state.cup, (k) => { state.cup = k; renderPipeline(); });
+  segButtons($("#origin-seg"), Object.keys(ORIGINS).map((k) => [k, k[0].toUpperCase() + k.slice(1)]), state.origin, (k) => { state.origin = k; renderPipeline(); });
+  const path = computePath(state.cup, state.origin);
+  const cs = CUP_SIZES[state.cup];
+  $("#gatebar").innerHTML = `<strong>${cs.label}</strong><span class="chip">gate: ${cs.gate}</span><span class="muted">${esc(GATES[cs.gate])}</span>
+    <span class="muted" style="flex-basis:100%;font-size:.85rem">${esc(cs.description)} ${state.cup === "ristretto" ? "Origin does not change a ristretto path." : `Entry: <code>${ORIGINS[state.origin].entry_stage}</code> (${ORIGINS[state.origin].plugin}).`} · ${path.length} stages</span>`;
+  const ordered = path.concat(STAGE_ORDER.filter((k) => !path.includes(k)));
+  $("#track").innerHTML = ordered.map((k) => {
+    const s = stageDef(k);
+    const on = path.includes(k);
+    const entry = state.cup !== "ristretto" && k === ORIGINS[state.origin].entry_stage;
+    return `<button type="button" class="stage ${on ? "on" : ""} ${entry ? "entry" : ""} ${s.external ? "external" : ""} ${state.stage === k ? "selected" : ""}" data-k="${k}" aria-pressed="${state.stage === k}" aria-label="${k} ${esc(s.coffee_name)}${on ? "" : " (not on this path)"}">
+      <div class="key">${k}${s.external ? " · not in stages.yaml" : ""}</div><div class="name">${esc(s.coffee_name)}</div>
+      <div class="plug muted">${s.plugin}${s.skill ? ` · ${esc(s.skill)}` : ""}</div>
+      ${s.artifact ? `<div style="margin-top:4px"><span class="chip">${esc(s.artifact)}</span></div>` : ""}</button>`;
+  }).join("");
+  $("#track").onclick = (e) => { const b = e.target.closest(".stage"); if (b) location.hash = `pipeline/${b.dataset.k}`; };
+  renderStageDetail(path);
+}
+function renderStageDetail(path) {
+  const k = state.stage;
+  const el = $("#stage-detail");
+  if (!k) { el.innerHTML = `<h3 style="margin-top:0">Select a stage</h3><p class="muted">Click any stage card for its owner, artifacts, subagents, OKF type and the exact stamp command. bean-core stages link straight to their implementation.</p>`; return; }
+  const s = stageDef(k);
+  const row = (label, val) => (val === undefined || val === null || (Array.isArray(val) && !val.length) ? "" : `<dt>${label}</dt><dd>${val}</dd>`);
+  const chips = (arr) => (arr || []).map((x) => `<span class="chip">${esc(x)}</span>`).join("");
+  const nextLinks = (s.next || []).map((n) => `<a class="chip link" href="#pipeline/${n}">${n}</a>`).join("") || `<span class="muted">end of pipeline</span>`;
+  const coreLinks = { "0_triage": ["triage", "okf-py", "expo"], "9_retro": ["retro-skill", "retro-py"] };
+  const subLinks = (s.subagents || []).map((a) => (C[a] ? `<a class="chip link" href="#internals/${a}">@${a}</a>` : `<span class="chip">@${a}</span>`)).join("");
+  const artPath = s.artifact && s.bundle ? `${BUNDLE_ROOTS[s.bundle]}${s.artifact}` : s.artifact;
+  el.innerHTML = `
+    <div class="key muted" style="font-family:var(--mono);font-size:.8rem">${k} ${path.includes(k) ? `· step ${path.indexOf(k) + 1} of ${path.length}` : "· not on the selected path"}</div>
+    <h3 style="margin:2px 0 6px">${esc(s.coffee_name)}</h3>
+    ${s.external ? `<div class="warnbox">Not defined in <code>stages.yaml</code>. Inferred from <code>agents/expo.md</code>: bean-grinder <em>assess → synthesize</em> emits <code>05_PLAN.md</code>. <a href="#internals/known-gaps">Known gap #3</a>.</div>` : ""}
+    <dl class="kv">
+      ${row("Plugin", `<span class="chip">${s.plugin}</span>`)}
+      ${row("Skill", s.skill && `<code>${esc(s.skill)}</code>${s.followup_skill ? ` → <code>${s.followup_skill}</code>` : ""}`)}
+      ${row("Subagents", subLinks)}
+      ${row("Artifact", artPath && `<code>${esc(artPath)}</code>`)}
+      ${row("Walkthrough", s.walkthrough_artifact && `<code>plans/&lt;id&gt;/${s.walkthrough_artifact}</code>`)}
+      ${row("Durable outputs", s.durable_outputs && chips(s.durable_outputs))}
+      ${row("Bundle", s.bundle && `<code>${s.bundle}</code>`)}
+      ${row("OKF type", s.okf_type && `<code>${s.okf_type}</code>`)}
+      ${row("Script", s.script && `<code>${s.script}</code>`)}
+      ${row("Workspace", s.workspace_mode && `<code>${s.workspace_mode}</code> · max ${s.max_parallel_workers} parallel`)}
+      ${row("Next", nextLinks)}
+    </dl>
+    ${s.okf_type && !s.external ? `<details><summary>Stamp command</summary><pre><code>${esc(stampCmd(k, "<id>"))}</code></pre></details>` : ""}
+    ${coreLinks[k] ? `<p><strong>Drill into implementation:</strong><br>${coreLinks[k].map((c) => `<a class="chip link" href="#internals/${c}">${esc(C[c].name.split(" — ")[0])}</a>`).join("")}</p>` : `<p class="muted" style="font-size:.85rem">Implemented in <strong>${s.plugin}</strong>; bean-core supplies the registry entry and OKF stamping.</p>`}`;
+}
+function stampCmd(k, id) {
+  const s = STAGES[k];
+  const dir = s.bundle === "durable_plans" ? `plans/${id}` : `.scratch/${id}`;
+  const by = `${s.plugin}/${s.skill || (s.subagents || ["agent"])[0]}`;
+  return `python3 scripts/okf.py stamp "${dir}/${s.artifact}" \\\n  --type ${s.okf_type} --stage ${k} --by "${by}"${k === "0_triage" ? ` \\\n  --stage-pair "cup_size=cortado" --stage-pair "origin=brownfield"` : ""}`;
+}
+$("#play-path").addEventListener("click", () => {
+  stopTimers();
+  const path = computePath(state.cup, state.origin);
+  let i = 0;
+  const tick = () => {
+    document.querySelectorAll(".stage").forEach((n) => n.classList.remove("playing"));
+    if (i >= path.length) { stopTimers(); return; }
+    const node = $(`.stage[data-k="${path[i]}"]`);
+    node.classList.add("playing");
+    state.stage = path[i]; renderStageDetail(path);
+    document.querySelectorAll(".stage").forEach((n) => n.classList.toggle("selected", n.dataset.k === state.stage));
+    i++;
+  };
+  tick(); state.timer = setInterval(tick, 1100);
+});
+
+/* ------------------------------------------------------------------
+ * INTERNALS
+ * ------------------------------------------------------------------ */
+function renderInternals() {
+  const tree = $("#tree");
+  if (!tree.dataset.ready) {
+    tree.innerHTML = `<label for="q" class="sr-only">Filter components</label><input id="q" type="search" placeholder="Filter… (press /)">` +
+      GROUPS.map((g) => `<div data-group="${g.id}"><h4>${esc(g.name)}</h4>${g.items.map((i) => `<a href="#internals/${i}" data-c="${i}">${esc(C[i].name.split(" — ")[0])}</a>`).join("")}</div>`).join("");
+    tree.dataset.ready = "1";
+    $("#q").addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase();
+      tree.querySelectorAll("a[data-c]").forEach((a) => { const c = C[a.dataset.c]; a.hidden = q && !(`${c.name} ${c.summary} ${(c.fns || []).map((f) => f.fn).join(" ")}`.toLowerCase().includes(q)); });
+      tree.querySelectorAll("[data-group]").forEach((g) => { g.hidden = ![...g.querySelectorAll("a")].some((a) => !a.hidden); });
+    });
+  }
+  tree.querySelectorAll("a[data-c]").forEach((a) => a.setAttribute("aria-current", String(a.dataset.c === state.comp)));
+  const el = $("#comp");
+  if (!state.comp) {
+    el.innerHTML = `<h2 style="margin-top:0">bean-core internals</h2><p class="lede">Every file in the repo, grouped by responsibility. Pick a group to drill down to functions, CLI flags and source lines.</p>
+      <div class="grid group-cards">${GROUPS.map((g) => `<a href="#internals/${g.items[0]}"><div class="card"><div class="muted" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em">${esc(g.layer)}</div><h3 style="margin:4px 0">${esc(g.name)}</h3>${g.items.map((i) => `<div style="font-size:.88rem">• ${esc(C[i].name.split(" — ")[0])}</div>`).join("")}</div></a>`).join("")}</div>`;
+    return;
+  }
+  const c = C[state.comp];
+  const fnRows = (c.fns || []).map((f) => `
+    <details><summary><span class="fn-sig">${f.fn}()</span> <span class="muted" style="font-weight:400">— ${f.file}:${f.lines[0]}–${f.lines[1]}</span></summary>
+      <p>${f.desc}</p><a href="${src(f.file, f.lines[0], f.lines[1])}" target="_blank" rel="noopener">View source lines ${f.lines[0]}–${f.lines[1]} ↗</a></details>`).join("");
+  el.innerHTML = `
+    <div class="comp-head"><h2>${esc(c.name)}</h2><span class="chip">${c.kind}</span>${c.file ? `<a class="chip link" href="${src(c.file)}" target="_blank" rel="noopener">${c.file} ↗</a>` : ""}</div>
+    <p class="lede" style="margin-top:8px">${esc(c.summary)}</p>
+    ${c.cli ? `<h3>CLI</h3><pre><code>${esc(c.cli)}</code></pre>` : ""}
+    ${c.body || ""}
+    ${fnRows ? `<h3>Functions <span class="muted" style="font-weight:400;font-size:.85rem">(expand for detail)</span></h3>${fnRows}` : ""}
+    ${c.flows.length ? `<h3>Participates in flows</h3>${c.flows.map((f) => `<a class="chip link" href="#flows/${f}">▶ ${esc(FLOWS[f].title)}</a>`).join("")}` : ""}
+    ${c.related.length ? `<h3>Related</h3>${c.related.map((r) => `<a class="chip link" href="#internals/${r}">${esc(C[r].name.split(" — ")[0])}</a>`).join("")}` : ""}`;
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "/" && !$("#view-internals").hidden && document.activeElement.tagName !== "INPUT") { e.preventDefault(); $("#q").focus(); }
+});
+
+/* ------------------------------------------------------------------
+ * FLOWS
+ * ------------------------------------------------------------------ */
+function renderFlows() {
+  $("#flow-list").innerHTML = `<h4>Runtime flows</h4>` + Object.entries(FLOWS).map(([k, f]) => `<a href="#flows/${k}" aria-current="${k === state.flow}">${esc(f.title)}</a>`).join("");
+  const f = FLOWS[state.flow];
+  $("#flow-title").textContent = f.title;
+  $("#flow-desc").textContent = f.desc;
+  const n = f.lanes.length;
+  const cols = `grid-template-columns: repeat(${n}, 1fr)`;
+  let html = `<div class="lanes" style="${cols}">${f.lanes.map((l) => `<div class="lane-head">${esc(l)}</div>`).join("")}</div>`;
+  f.steps.forEach(([a, b, label], i) => {
+    const cells = Array.from({ length: n }, () => `<div class="cell"></div>`).join("");
+    let msg;
+    if (a === b) {
+      msg = `<div class="msg self" style="left:${((a + 0.5) / n) * 100}%"><div class="label">${esc(label)}</div></div>`;
+    } else {
+      const lo = Math.min(a, b), hi = Math.max(a, b);
+      msg = `<div class="msg ${b > a ? "right" : "left"}" style="left:${((lo + 0.5) / n) * 100}%;width:${((hi - lo) / n) * 100}%"><div class="label">${esc(label)}</div><div class="arrow"></div></div>`;
+    }
+    html += `<div class="seq-row" data-i="${i}" style="${cols}" role="button" tabindex="0" aria-label="Step ${i + 1}: ${esc(f.lanes[a])} to ${esc(f.lanes[b])}, ${esc(label)}">${cells}${msg}</div>`;
+  });
+  $("#seq").innerHTML = html;
+  $("#seq").onclick = (e) => { const r = e.target.closest(".seq-row"); if (r) { stopTimers(); setStep(+r.dataset.i); } };
+  $("#seq").onkeydown = (e) => { const r = e.target.closest(".seq-row"); if (r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setStep(+r.dataset.i); } };
+  setStep(state.step);
+}
+function setStep(i) {
+  const f = FLOWS[state.flow];
+  state.step = Math.max(-1, Math.min(i, f.steps.length - 1));
+  document.querySelectorAll(".seq-row").forEach((r) => {
+    const k = +r.dataset.i;
+    r.classList.toggle("done", state.step >= 0 && k < state.step);
+    r.classList.toggle("current", k === state.step);
+    r.classList.toggle("future", state.step >= 0 && k > state.step);
+  });
+  const ex = $("#explain");
+  if (state.step < 0) { ex.innerHTML = `<p class="muted" style="margin:0">Press <strong>▶ Play</strong> or <strong>Next</strong> to walk through ${f.steps.length} steps, or click a row.</p>`; return; }
+  const [a, b, label, detail, link] = f.steps[state.step];
+  const linkHtml = link ? (link.startsWith("#") ? `<a href="${link}">Drill down →</a>` : `<a href="${link}" target="_blank" rel="noopener">View source ↗</a>`) : "";
+  ex.innerHTML = `<div><span class="num">Step ${state.step + 1}/${f.steps.length}</span> · <strong>${esc(f.lanes[a])}</strong> ${a === b ? "(internal)" : `→ <strong>${esc(f.lanes[b])}</strong>`}</div>
+    <h3 style="margin:6px 0">${esc(label)}</h3><p style="margin:0 0 6px">${esc(detail)}</p>${linkHtml}`;
+}
+$("#f-next").onclick = () => { stopTimers(); setStep(state.step + 1); };
+$("#f-prev").onclick = () => { stopTimers(); setStep(state.step - 1); };
+$("#f-reset").onclick = () => { stopTimers(); setStep(-1); };
+$("#f-play").onclick = () => {
+  stopTimers();
+  const f = FLOWS[state.flow];
+  if (state.step >= f.steps.length - 1) setStep(-1);
+  state.timer = setInterval(() => { if (state.step >= f.steps.length - 1) { stopTimers(); return; } setStep(state.step + 1); }, 1600);
+  setStep(state.step + 1);
+};
+document.addEventListener("keydown", (e) => {
+  if ($("#view-flows").hidden || ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if (e.key === "ArrowRight") { stopTimers(); setStep(state.step + 1); }
+  if (e.key === "ArrowLeft") { stopTimers(); setStep(state.step - 1); }
+});
+
+/* ------------------------------------------------------------------
+ * PLAYGROUND — JS port of scripts/git_guardrails.py::evaluate_command
+ * ------------------------------------------------------------------ */
+const GIT_SUB = (sub) => new RegExp(String.raw`\bgit\b(?:\s+-\S+(?:\s+\S+)?)?\s+` + sub + String.raw`\b`);
+function evaluateCommand(cmd) {
+  if (!cmd || !cmd.includes("git")) return { decision: "allow", why: "No 'git' substring — fast-path allow." };
+  for (const seg of cmd.split(/(?:&&|\|\||;|\n|\|)/)) {
+    const s = seg.trim();
+    if (!s) continue;
+    if (GIT_SUB("push").test(s)) {
+      const sanitized = s.replace(/--force-with-lease(?:=\S+)?/g, "").replace(/--force-if-includes/g, "");
+      if (/(?:^|\s)(?:--force|-f)(?:\s|$)/.test(sanitized) || /(?:^|\s)\+[a-zA-Z0-9_./-]+:[a-zA-Z0-9_./-]+/.test(sanitized))
+        return { decision: "deny", reason: "Destructive `git push --force` is blocked by Bean-Core guardrails. Use `--force-with-lease` instead.", rule: 1, seg: s };
+    }
+    if (/\bgit\b(?:\s+-\S+(?:\s+\S+)?)?\s+reset\b.*\s--hard(?:\s|$)/.test(s))
+      return { decision: "deny", reason: "Destructive `git reset --hard` is blocked by Bean-Core guardrails to prevent uncommitted work loss.", rule: 2, seg: s };
+    if (GIT_SUB("clean").test(s) && !/(?:^|\s)(?:-n|--dry-run)(?:\s|$)/.test(s) && /(?:^|\s)(?:--force|-[a-zA-Z]*f[a-zA-Z]*)(?:\s|$)/.test(s))
+      return { decision: "deny", reason: "Destructive `git clean -f` is blocked by Bean-Core guardrails.", rule: 3, seg: s };
+    if (GIT_SUB("branch").test(s) && (/(?:^|\s)-D\s+(?:.*\s)?(?:main|master)(?:\s|$)/.test(s) || (/--delete/.test(s) && /--force|-f/.test(s) && /\b(?:main|master)\b/.test(s))))
+      return { decision: "deny", reason: "Deleting protected branch `main` or `master` (`git branch -D main|master`) is blocked by Bean-Core guardrails.", rule: 4, seg: s };
+  }
+  return { decision: "allow", why: "No segment matched a destructive rule." };
+}
+const PRESETS = ["git push --force origin main", "git push --force-with-lease origin feat", "git push origin +main:main", "git reset --hard HEAD~1", "git reset --soft HEAD~1", "git clean -fdx", "git clean -n -fd", "git branch -D main", "git branch -D feat/old", "git -C repo push -f", "npm test && git commit -m wip"];
+function renderPlayground() {
+  const pre = $("#g-presets");
+  if (!pre.dataset.ready) {
+    pre.innerHTML = PRESETS.map((p) => `<button type="button" class="chip link" data-p="${esc(p)}">${esc(p)}</button>`).join("");
+    pre.onclick = (e) => { const b = e.target.closest("button"); if (b) { $("#g-cmd").value = b.dataset.p; runGuard(); } };
+    $("#g-cmd").addEventListener("input", runGuard);
+    ["C", "H", "M", "L", "R"].forEach((k) => $(`#c-${k}`).addEventListener("input", runCouncil));
+    $("#s-stage").innerHTML = Object.keys(STAGES).filter((k) => STAGES[k].okf_type).map((k) => `<option value="${k}">${k} · ${esc(STAGES[k].coffee_name)}</option>`).join("");
+    $("#s-stage").value = "4_spec";
+    $("#s-stage").addEventListener("change", runStamp); $("#s-id").addEventListener("input", runStamp);
+    pre.dataset.ready = "1";
+  }
+  runGuard(); runCouncil(); runStamp();
+}
+function runGuard() {
+  const r = evaluateCommand($("#g-cmd").value);
+  const out = $("#g-out");
+  out.className = `verdict ${r.decision}`;
+  out.textContent = r.decision === "deny"
+    ? `❌ DENY  (rule ${r.rule})\nsegment: ${r.seg}\n${JSON.stringify({ decision: r.decision, reason: r.reason })}`
+    : `✅ ALLOW\n${r.why}\n${JSON.stringify({ decision: "allow" })}`;
+}
+function runCouncil() {
+  const v = (k) => Math.max(0, parseInt($(`#c-${k}`).value, 10) || 0);
+  const [c, h, m, l, round] = ["C", "H", "M", "L", "R"].map(v);
+  const score = Math.max(0, 100 - 25 * c - 10 * h - 3 * m - 1 * l);
+  const verdict = score >= 90 && c === 0 && h === 0 ? "CONVERGED" : round >= 3 ? "CIRCUIT_BREAKER_TRIGGERED" : "NEEDS_REVISION";
+  const out = $("#c-out");
+  out.className = `verdict ${verdict === "CONVERGED" ? "allow" : verdict === "NEEDS_REVISION" ? "" : "deny"}`;
+  out.textContent = `score = max(0, 100 − 25·${c} − 10·${h} − 3·${m} − 1·${l}) = ${score}\nverdict: ${verdict}\n${verdict === "CONVERGED" ? "→ Stage 6B human gate" : verdict === "NEEDS_REVISION" ? `→ architect revises; round ${Math.max(1, round) + 1} of 3` : "→ plan frozen; deadlocks escalated to the human gate"}`;
+}
+function runStamp() { $("#s-out").textContent = stampCmd($("#s-stage").value, $("#s-id").value.trim() || "<id>"); }
+
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
