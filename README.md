@@ -4,7 +4,7 @@
 
 [![Docs](https://github.com/sapientcoffee/bean-core/actions/workflows/pages.yml/badge.svg)](https://github.com/sapientcoffee/bean-core/actions/workflows/pages.yml)
 
-**📖 Docs:** [**Interactive architecture explorer**](https://sapientcoffee.github.io/bean-core/) · [Architecture deep-dive (Markdown)](docs/ARCHITECTURE.md)
+**📖 Docs:** [**Interactive architecture explorer**](https://sapientcoffee.github.io/bean-core/) · [Architecture deep-dive (Markdown)](docs/ARCHITECTURE.md) · [**End-to-end demo (`demo.md`)**](demo.md)
 
 ---
 
@@ -83,6 +83,8 @@ ln -sfn "$PWD" ~/.gemini/config/plugins/bean-core
 ```
 
 **Requirements:** Python 3.10+. PyYAML is optional for `okf.py` (it has a fallback frontmatter parser) but required to run the test suite.
+
+👉 **Want to see a full greenfield build from start to finish?** Walk through [**`demo.md`**](demo.md) to brew **"Depresso-Meter"** step-by-step in both **Antigravity 2.0** and the **Antigravity CLI (`agy`)**.
 
 ---
 
@@ -180,6 +182,7 @@ bean-core/
 ├── stages.yaml            # Canonical stage registry
 ├── hooks.json             # SessionStart / PreToolUse / PostToolUse wiring
 ├── install.sh             # Copy-based installer
+├── demo.md                # End-to-end walkthrough (Antigravity 2.0 & agy CLI)
 ├── agents/                # expo, threat-modeler, review-arbiter
 ├── skills/                # triage (Stage 0), retro (Stage 9)
 ├── rules/AGENTS.md        # Always-on governance rules

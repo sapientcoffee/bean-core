@@ -99,6 +99,16 @@ class TestInteractiveDocs(unittest.TestCase):
         for script in sorted((REPO_ROOT / "scripts").glob("*.py")):
             self.assertIn(script.name, self.html, f"scripts/{script.name} is not documented in docs/index.html")
 
+    def test_demo_doc_exists_and_is_linked_from_readme(self) -> None:
+        demo_path = REPO_ROOT / "demo.md"
+        readme_path = REPO_ROOT / "README.md"
+        self.assertTrue(demo_path.is_file(), "demo.md is missing from bean-core root")
+        readme_text = readme_path.read_text(encoding="utf-8")
+        self.assertIn("(demo.md)", readme_text, "README.md must link to demo.md")
+        demo_text = demo_path.read_text(encoding="utf-8")
+        self.assertIn("Antigravity 2.0", demo_text)
+        self.assertIn("Antigravity CLI", demo_text)
+
 
 if __name__ == "__main__":
     unittest.main()
